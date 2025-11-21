@@ -1,0 +1,7 @@
+{
+  "name": "ChainGarden",
+  "description": "A generative audio-reactive botanical garden with Risograph aesthetics.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

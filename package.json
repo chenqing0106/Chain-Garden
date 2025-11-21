@@ -1,0 +1,32 @@
+{
+  "name": "chain-garden",
+  "version": "3.2.0",
+  "description": "Web3 Botanical Generator - Generate unique plant NFTs from audio/visual data",
+  "private": true,
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:local": "hardhat run scripts/deploy.js --network localhost",
+    "deploy:sepolia": "hardhat run scripts/deploy.js --network sepolia",
+    "node": "hardhat node",
+    "frontend:dev": "cd src && npm run dev",
+    "frontend:build": "cd src && npm run build",
+    "frontend:preview": "cd src && npm run preview"
+  },
+  "keywords": [
+    "nft",
+    "web3",
+    "ethereum",
+    "generative-art",
+    "botanical"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@openzeppelin/contracts": "^5.0.0",
+    "dotenv": "^16.3.1",
+    "hardhat": "^2.19.0"
+  }
+}
+

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ChainGarden</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'riso-paper': '#fcfbf8', // Off-white paper
+              'riso-green': '#00a651', // Classic Riso Green
+              'riso-pink': '#ff48b0',  // Fluorescent Pink
+              'riso-blue': '#0078bf',  // Medium Blue
+              'riso-yellow': '#ffe800', // Yellow
+              'riso-black': '#1a1a1a', // Ink Black
+            },
+            fontFamily: {
+              mono: ['Courier Prime', 'Courier New', 'monospace'],
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      /* Lo-Fi Paper Grain Effect */
+      .bg-grain {
+        position: relative;
+      }
+      .bg-grain::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0.15;
+        pointer-events: none;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        z-index: 50;
+      }
+      
+      /* Risograph Misalignment Effect Class */
+      .riso-layer {
+        mix-blend-mode: multiply;
+      }
+
+      /* Custom Scrollbar for Zine feel */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #fcfbf8; 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #00a651; 
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "ethers": "https://esm.sh/ethers@6.11.1"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-riso-paper text-riso-black font-mono overflow-hidden">
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
