@@ -295,11 +295,10 @@ const PlantCanvas: React.FC<PlantCanvasProps> = ({ analyzer, dna, isPlaying, onS
         drawFractal(ctx, centerX - 20, bottomY, 80, -30, 0, 6, audioData, 5);
         drawFractal(ctx, centerX + 20, bottomY, 80, 30, 0, 6, audioData, 5);
     } else if (dna.growthArchitecture === 'organic_vine') {
-        // Draw multiple hanging vines from top, starting at 10% from top for better visibility
-        const topY = canvas.height * 0.1; // Start from 10% from top
-        drawVine(ctx, centerX, topY, audioData);
-        drawVine(ctx, centerX - 120, topY + 20, audioData);
-        drawVine(ctx, centerX + 120, topY + 40, audioData);
+        // Draw multiple vines growing from bottom (FIX: Changed from top coords to bottomY)
+        drawVine(ctx, centerX, bottomY, audioData); // 改为 bottomY，从底部生长
+        drawVine(ctx, centerX - 80, bottomY, audioData);
+        drawVine(ctx, centerX + 80, bottomY, audioData);
     } else if (dna.growthArchitecture === 'radial_succulent') {
         drawSucculent(ctx, centerX, centerY, audioData);
     }
