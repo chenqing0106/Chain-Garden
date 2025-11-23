@@ -10,6 +10,15 @@ Version: 3.2.0 | Network: Sepolia Testnet
 
 详细的团队分工方案请查看 [TEAM_ROLES.md](./TEAM_ROLES.md)
 
+## 🚀 部署指南
+
+**完成 NFT 上链功能的详细步骤请查看：[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)**
+
+该指南包含：
+- 如何在 Remix 中部署合约到测试网
+- 获得合约地址后的配置步骤
+- 如何完成 NFT 上链功能的完整流程
+
 ---
 
 ## 📁 项目架构
@@ -92,8 +101,9 @@ chain-garden/
 ### 高优先级
 
 1. **NFT上链功能** ⚠️ **关键任务**
-   - [ ] 部署 ChainGardenNFT 合约到 Sepolia 测试网
-   - [ ] 更新 `src/services/web3Service.ts` 中的合约地址
+   - 📖 **详细部署指南请查看：[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)**
+   - [ ] 部署 ChainGardenNFT 合约到 Sepolia 测试网（使用 Remix）
+   - [ ] 更新 `frontend/services/web3Service.ts` 中的合约地址
    - [ ] 实现真实的 `mintNFT()` 函数（当前为模拟）
    - [ ] 实现元数据上传到 IPFS 或中心化服务器
    - [ ] 处理交易确认和错误处理
@@ -217,7 +227,7 @@ npm run deploy:local
 npm run deploy:sepolia
 ```
 
-部署成功后，更新 `src/services/web3Service.ts` 中的 `CONTRACT_ADDRESS`。
+部署成功后，更新 `frontend/services/web3Service.ts` 中的 `CONTRACT_ADDRESS`。详细步骤请查看 [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)。
 
 ### 运行前端
 
