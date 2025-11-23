@@ -1,12 +1,31 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { PlantDNA } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// The client gets the API key from the environment variable `GEMINI_API_KEY` automatically
+// If not found, it will try `API_KEY` as fallback (for Vite build-time injection)
+const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+
+// Initialize GoogleGenAI - it will automatically read GEMINI_API_KEY from environment
+// But we also support build-time injection via Vite's define
+const ai = apiKey 
+  ? new GoogleGenAI({ apiKey }) 
+  : new GoogleGenAI({}); // Empty object - will try to read from process.env.GEMINI_API_KEY automatically
+
+if (!apiKey && !process.env.GEMINI_API_KEY) {
+  console.warn("GEMINI_API_KEY not found in environment variables. Please create a .env file in the root directory with GEMINI_API_KEY=your_key");
+}
 
 export const generatePlantDNA = async (vibe: string): Promise<PlantDNA> => {
+  // Check if API key is available (either from build-time injection or runtime env)
+  const hasApiKey = apiKey || process.env.GEMINI_API_KEY;
+  if (!hasApiKey) {
+    throw new Error("API key not configured. Please set GEMINI_API_KEY in your .env file in the root directory. See ENV_SETUP.md for details.");
+  }
+
   const model = "gemini-2.5-flash";
   
-  const response = await ai.models.generateContent({
+  try {
+    const response = await ai.models.generateContent({
     model,
     contents: `Generate a fictional plant species based on this musical vibe/mood: "${vibe}". 
     The aesthetic is Risograph/Lo-Fi Botanical. 
@@ -43,9 +62,16 @@ export const generatePlantDNA = async (vibe: string): Promise<PlantDNA> => {
     }
   });
 
-  if (response.text) {
-    return JSON.parse(response.text) as PlantDNA;
-  }
+    if (response.text) {
+      return JSON.parse(response.text) as PlantDNA;
+    }
 
-  throw new Error("Failed to generate plant DNA");
+    throw new Error("Failed to generate plant DNA");
+  } catch (error: any) {
+    // Provide more helpful error messages
+    if (error?.message?.includes("API key") || error?.message?.includes("INVALID_ARGUMENT")) {
+      throw new Error("Invalid API key. Please check your GEMINI_API_KEY in .env file. See ENV_SETUP.md for setup instructions.");
+    }
+    throw error;
+  }
 };

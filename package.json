@@ -9,9 +9,10 @@
     "deploy:local": "hardhat run scripts/deploy.js --network localhost",
     "deploy:sepolia": "hardhat run scripts/deploy.js --network sepolia",
     "node": "hardhat node",
-    "frontend:dev": "cd src && npm run dev",
-    "frontend:build": "cd src && npm run build",
-    "frontend:preview": "cd src && npm run preview"
+    "dev": "cd frontend && npm run dev",
+    "frontend:dev": "cd frontend && npm run dev",
+    "frontend:build": "cd frontend && npm run build",
+    "frontend:preview": "cd frontend && npm run preview"
   },
   "keywords": [
     "nft",

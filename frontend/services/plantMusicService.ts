@@ -247,7 +247,8 @@ export class PlantMusicService implements AudioSource {
     if (!this.analyser || !this.dataArray) {
         return { bass: 0, mid: 0, treble: 0, raw: new Uint8Array(0) };
     }
-    this.analyser.getByteFrequencyData(this.dataArray);
+    // Type assertion to fix TypeScript strict type checking for ArrayBufferLike vs ArrayBuffer
+    this.analyser.getByteFrequencyData(this.dataArray as any);
     
     const bufferLength = this.dataArray.length;
     const third = Math.floor(bufferLength / 3);
@@ -260,11 +261,14 @@ export class PlantMusicService implements AudioSource {
       return sum / (end - start);
     };
 
+    // Create a new Uint8Array to avoid type issues
+    const rawCopy = new Uint8Array(Array.from(this.dataArray));
+
     return {
       bass: getAvg(0, third),
       mid: getAvg(third, third * 2),
       treble: getAvg(third * 2, bufferLength),
-      raw: this.dataArray
+      raw: rawCopy as Uint8Array
     };
   }
 

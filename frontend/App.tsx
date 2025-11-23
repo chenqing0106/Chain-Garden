@@ -205,9 +205,14 @@ const App: React.FC = () => {
           plantMusicRef.current.play(newDna);
       }
 
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert("Failed to analyze vibe. Using cached seed.");
+      const errorMsg = e?.message || "Failed to analyze vibe";
+      if (errorMsg.includes("API key") || errorMsg.includes("GEMINI_API_KEY")) {
+        alert(`⚠️ ${errorMsg}\n\nPlease check ENV_SETUP.md for configuration instructions.`);
+      } else {
+        alert(`Failed to analyze vibe: ${errorMsg}\n\nUsing cached seed.`);
+      }
     } finally {
       setIsGenerating(false);
     }

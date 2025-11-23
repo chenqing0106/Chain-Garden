@@ -6,6 +6,12 @@ Version: 3.2.0 | Network: Sepolia Testnet
 
 ---
 
+## 👥 团队分工
+
+详细的团队分工方案请查看 [TEAM_ROLES.md](./TEAM_ROLES.md)
+
+---
+
 ## 📁 项目架构
 
 ```
@@ -14,7 +20,7 @@ chain-garden/
 │   └── ChainGardenNFT.sol    # ERC-721 NFT合约
 ├── scripts/                   # 部署脚本
 │   └── deploy.js             # 合约部署脚本
-├── src/                       # React前端代码
+├── front/                       # React前端代码
 │   ├── components/           # React组件
 │   │   ├── MintModal.tsx
 │   │   ├── PlantCanvas.tsx
