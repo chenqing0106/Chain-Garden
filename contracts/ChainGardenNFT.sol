@@ -4,7 +4,6 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
 
 /**
  * @title ChainGardenNFT
@@ -12,9 +11,8 @@ import "@openzeppelin/contracts/utils/Counters.sol";
  * Each NFT represents a unique plant generated from audio/visual data
  */
 contract ChainGardenNFT is ERC721, ERC721URIStorage, Ownable {
-    using Counters for Counters.Counter;
-
-    Counters.Counter private _tokenIdCounter;
+    // Token ID counter - using native uint256 instead of Counters (OpenZeppelin v5+ removed Counters)
+    uint256 private _tokenIdCounter;
     
     // Base URI for token metadata
     string private _baseTokenURI;
@@ -52,11 +50,12 @@ contract ChainGardenNFT is ERC721, ERC721URIStorage, Ownable {
         require(msg.value >= mintPrice, "Insufficient payment");
         
         if (maxSupply > 0) {
-            require(_tokenIdCounter.current() < maxSupply, "Max supply reached");
+            require(_tokenIdCounter < maxSupply, "Max supply reached");
         }
         
-        uint256 tokenId = _tokenIdCounter.current();
-        _tokenIdCounter.increment();
+        // Get current token ID and increment counter
+        uint256 tokenId = _tokenIdCounter;
+        _tokenIdCounter++;
         
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, metadataURI);
@@ -81,7 +80,7 @@ contract ChainGardenNFT is ERC721, ERC721URIStorage, Ownable {
      * @dev Get the current token count
      */
     function totalSupply() public view returns (uint256) {
-        return _tokenIdCounter.current();
+        return _tokenIdCounter;
     }
     
     /**
