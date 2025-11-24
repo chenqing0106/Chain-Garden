@@ -12,19 +12,19 @@ import { PlantDNA, Specimen, AudioSource } from './types';
 
 // Default DNA if no Gemini
 const DEFAULT_DNA: PlantDNA = {
-  speciesName: "Fernus Digitalis",
-  description: "A common digital fern that thrives on white noise.",
-  growthArchitecture: "fern_frond",
-  branchingFactor: 0.85,
-  angleVariance: 25,
-  colorPalette: ["#00a651", "#0078bf", "#ff48b0"],
-  leafShape: "fern",
-  leafArrangement: "opposite",
-  growthSpeed: 1.0
+  speciesName: "Willow of Whispers",
+  description: "A melancholy specimen that weeps with the bassline.",
+  growthArchitecture: "weeping_willow",
+  branchingFactor: 0.8,
+  angleVariance: 45,
+  colorPalette: ["#1a1a1a", "#0078bf", "#ff48b0"],
+  leafShape: "needle",
+  leafArrangement: "alternate",
+  growthSpeed: 1.2
 };
 
-const ARCHITECTURES = ["fractal_tree", "organic_vine", "radial_succulent", "fern_frond"];
-const LEAF_SHAPES = ["fern", "round", "needle", "abstract", "heart"];
+const ARCHITECTURES = ["fractal_tree", "organic_vine", "radial_succulent", "fern_frond", "weeping_willow", "alien_shrub", "crystal_cactus"];
+const LEAF_SHAPES = ["fern", "round", "needle", "abstract", "heart", "crystal"];
 
 const App: React.FC = () => {
   const [analyzer, setAnalyzer] = useState<AudioSource | null>(null);
@@ -205,14 +205,9 @@ const App: React.FC = () => {
           plantMusicRef.current.play(newDna);
       }
 
-    } catch (e: any) {
+    } catch (e) {
       console.error(e);
-      const errorMsg = e?.message || "Failed to analyze vibe";
-      if (errorMsg.includes("API key") || errorMsg.includes("GEMINI_API_KEY")) {
-        alert(`⚠️ ${errorMsg}\n\nPlease check ENV_SETUP.md for configuration instructions.`);
-      } else {
-        alert(`Failed to analyze vibe: ${errorMsg}\n\nUsing cached seed.`);
-      }
+      alert("Failed to analyze vibe. Using cached seed.");
     } finally {
       setIsGenerating(false);
     }
@@ -346,7 +341,7 @@ const App: React.FC = () => {
             </h1>
             <p className="text-xs mt-2 font-mono text-riso-black/70">
                 WEB3 BOTANICAL GENERATOR<br/>
-                v3.2 -- SEPOLIA
+                v3.3 -- SEPOLIA
             </p>
           </div>
         </div>
@@ -430,7 +425,7 @@ const App: React.FC = () => {
           )}
           
           <p className="text-[10px] leading-tight text-justify">
-            CAUTION: Sensitive to sonic frequencies. Bass stimulates structural growth. Treble encourages foliation.
+            REACTIVE SYSTEM: Bass expands structure. Mids sway branches. Treble shifts color spectrum.
           </p>
         </div>
 
