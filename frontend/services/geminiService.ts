@@ -27,20 +27,22 @@ export const generatePlantDNA = async (vibe: string): Promise<PlantDNA> => {
   try {
     const response = await ai.models.generateContent({
     model,
-    contents: `Generate a fictional plant species based on this musical vibe/mood: "${vibe}". 
-    The aesthetic is Risograph/Lo-Fi Botanical. 
+    contents: `Analyze this user input: "${vibe}". It could be a mood, a name, a diary entry, or a random thought.
     
-    Create distinct architectures including new exotic ones:
-    - "fractal_tree": Classic majestic trees.
-    - "organic_vine": Creeping, wandering, curvy lines.
-    - "radial_succulent": Geometric, flower-like patterns.
-    - "fern_frond": Mathematical, symmetrical.
-    - "weeping_willow": Drooping branches, sad/melancholic, heavy gravity.
-    - "alien_shrub": Glitchy, angular, weird, irregular, sci-fi.
-    - "crystal_cactus": Sharp, geometric, mineral-like structures.
+    1. Determine the emotional "Mood" (Happy, Melancholic, Mysterious, Aggressive, Calm).
+    2. Determine the "Energy" level (0.0 = still/dead, 1.0 = chaotic/explosive).
+    3. Generate a fictional plant based on these feelings using Risograph/Lo-Fi aesthetics.
+    
+    Architectures:
+    - "fractal_tree": Stable, growth, history.
+    - "organic_vine": Wandering, confused, flexible.
+    - "radial_succulent": Focused, geometric, mandala.
+    - "fern_frond": Mathematical, precise, repetitive.
+    - "weeping_willow": Sad, heavy, gravity-bound.
+    - "alien_shrub": Glitchy, weird, unexpected.
+    - "crystal_cactus": Sharp, defensive, rigid.
 
-    Return strictly JSON matching the schema. 
-    Colors should be hex codes. Use bold Riso colors but adapt to the vibe.`,
+    Return strictly JSON matching the schema.`,
     config: {
       responseMimeType: "application/json",
       responseSchema: {
@@ -58,9 +60,11 @@ export const generatePlantDNA = async (vibe: string): Promise<PlantDNA> => {
           },
           leafShape: { type: Type.STRING, enum: ["fern", "round", "needle", "abstract", "heart", "crystal"] },
           leafArrangement: { type: Type.STRING, enum: ["alternate", "opposite", "whorled"] },
-          growthSpeed: { type: Type.NUMBER, description: "Between 0.5 and 2.5" }
+          growthSpeed: { type: Type.NUMBER, description: "Between 0.5 and 2.5" },
+          mood: { type: Type.STRING, enum: ["happy", "melancholic", "mysterious", "aggressive", "calm"] },
+          energy: { type: Type.NUMBER, description: "0.0 to 1.0" }
         },
-        required: ["speciesName", "description", "growthArchitecture", "branchingFactor", "angleVariance", "colorPalette", "leafShape", "leafArrangement", "growthSpeed"]
+        required: ["speciesName", "description", "growthArchitecture", "branchingFactor", "angleVariance", "colorPalette", "leafShape", "leafArrangement", "growthSpeed", "mood", "energy"]
       }
     }
   });

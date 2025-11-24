@@ -12,7 +12,11 @@ export interface PlantDNA {
   leafShape: 'fern' | 'round' | 'needle' | 'abstract' | 'heart' | 'crystal';
   leafArrangement: 'alternate' | 'opposite' | 'whorled';
   
-  growthSpeed: number;
+  growthSpeed: number; // Affects animation speed AND BPM
+
+  // Vibe & Music Traits (New)
+  mood: 'happy' | 'melancholic' | 'mysterious' | 'aggressive' | 'calm';
+  energy: number; // 0.0 to 1.0 (Chaos factor)
 }
 
 export interface Specimen {

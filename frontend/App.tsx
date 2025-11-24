@@ -20,7 +20,9 @@ const DEFAULT_DNA: PlantDNA = {
   colorPalette: ["#1a1a1a", "#0078bf", "#ff48b0"],
   leafShape: "needle",
   leafArrangement: "alternate",
-  growthSpeed: 1.2
+  growthSpeed: 1.2,
+  mood: "melancholic",
+  energy: 0.3
 };
 
 const ARCHITECTURES = ["fractal_tree", "organic_vine", "radial_succulent", "fern_frond", "weeping_willow", "alien_shrub", "crystal_cactus"];
@@ -160,14 +162,14 @@ const App: React.FC = () => {
   };
 
   // Handle Plant Music Generation
-  const handleSonify = () => {
+  const handleSonify = async () => {
     if (audioMode === 'gen' && isListening) {
         stopAllAudio();
         setAudioMode('mic'); // reset
     } else {
         stopAllAudio();
         setAudioMode('gen');
-        plantMusicRef.current.play(dna);
+        await plantMusicRef.current.play(dna);
         setAnalyzer(plantMusicRef.current);
         setIsListening(true);
     }
@@ -425,7 +427,7 @@ const App: React.FC = () => {
           )}
           
           <p className="text-[10px] leading-tight text-justify">
-            REACTIVE SYSTEM: Bass expands structure. Mids sway branches. Treble shifts color spectrum.
+            REACTIVE SYSTEM: Bass expands structure & warps lines. Mids sway branches. Treble shifts color & creates glitches.
           </p>
         </div>
 
@@ -450,7 +452,7 @@ const App: React.FC = () => {
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Describe vibe (e.g., 'Techno spikes', 'Jazz curves')"
+                placeholder="What's your vibe? (e.g., 'My cat sleeping', 'Angry punk rock', 'First kiss')"
                 className="w-full h-24 p-3 font-mono text-sm bg-gray-50 border-2 border-riso-black focus:outline-none focus:ring-2 focus:ring-riso-blue resize-none"
               />
               <button 
@@ -475,13 +477,13 @@ const App: React.FC = () => {
                  </select>
                </div>
                <div>
-                 <label className="block font-bold mb-1">LEAF SHAPE</label>
+                 <label className="block font-bold mb-1">MOOD</label>
                  <select 
-                    value={dna.leafShape} 
-                    onChange={(e) => handleDnaChange('leafShape', e.target.value)}
+                    value={dna.mood} 
+                    onChange={(e) => handleDnaChange('mood', e.target.value)}
                     className="w-full p-1 border border-gray-300 font-mono"
                  >
-                   {LEAF_SHAPES.map(s => <option key={s} value={s}>{s.toUpperCase()}</option>)}
+                   {['happy', 'melancholic', 'mysterious', 'aggressive', 'calm'].map(m => <option key={m} value={m}>{m.toUpperCase()}</option>)}
                  </select>
                </div>
                <div>
@@ -499,14 +501,14 @@ const App: React.FC = () => {
                  </div>
                </div>
                <div>
-                  <label className="block font-bold mb-1">GROWTH SPEED: {dna.growthSpeed.toFixed(1)}</label>
+                  <label className="block font-bold mb-1">ENERGY: {dna.energy?.toFixed(1) || 0.5}</label>
                   <input 
                     type="range" 
-                    min="0.1" 
-                    max="3.0" 
+                    min="0.0" 
+                    max="1.0" 
                     step="0.1" 
-                    value={dna.growthSpeed} 
-                    onChange={(e) => handleDnaChange('growthSpeed', parseFloat(e.target.value))}
+                    value={dna.energy || 0.5} 
+                    onChange={(e) => handleDnaChange('energy', parseFloat(e.target.value))}
                     className="w-full accent-riso-green"
                   />
                </div>
@@ -525,8 +527,8 @@ const App: React.FC = () => {
             <span className="uppercase">{dna.growthArchitecture.replace('_', ' ')}</span>
           </div>
           <div className="flex justify-between">
-            <span>LEAF:</span>
-            <span>{dna.leafShape.toUpperCase()}</span>
+            <span>MOOD:</span>
+            <span className="uppercase text-riso-pink">{dna.mood}</span>
           </div>
         </div>
       </div>
@@ -644,13 +646,13 @@ const App: React.FC = () => {
                               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
                               <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
                             </span>
-                           <span className="font-bold font-mono text-xl">HALT SONIFICATION</span>
+                           <span className="font-bold font-mono text-xl">HALT GENERATION</span>
                         </>
                     ) : (
                         <>
                            <Music className="w-8 h-8" />
                            <div className="text-left">
-                             <span className="block text-xs font-bold">HEAR THE DATA</span>
+                             <span className="block text-xs font-bold">DNA TO AUDIO</span>
                              <span className="block font-bold font-mono text-xl">SONIFY PLANT</span>
                            </div>
                         </>

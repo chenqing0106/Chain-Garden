@@ -1,426 +1,261 @@
-
+import * as Tone from 'tone';
 import { PlantDNA, AudioSource } from '../types';
 
-// Seeded random generator
-const sfc32 = (a: number, b: number, c: number, d: number) => {
-  return function() {
-    a >>>= 0; b >>>= 0; c >>>= 0; d >>>= 0; 
-    var t = (a + b) | 0;
-    a = b ^ b >>> 9;
-    b = c + (c << 3) | 0;
-    c = (c << 21 | c >>> 11);
-    d = d + 1 | 0;
-    t = t + d | 0;
-    c = c + t | 0;
-    return (t >>> 0) / 4294967296;
-  }
-}
-
-const cyrb128 = (str: string) => {
-    let h1 = 1779033703, h2 = 3144134277,
-        h3 = 1013904242, h4 = 2773480762;
-    for (let i = 0, k; i < str.length; i++) {
-        k = str.charCodeAt(i);
-        h1 = h2 ^ Math.imul(h1 ^ k, 597399067);
-        h2 = h3 ^ Math.imul(h2 ^ k, 2869860233);
-        h3 = h4 ^ Math.imul(h3 ^ k, 951274213);
-        h4 = h1 ^ Math.imul(h4 ^ k, 2716044179);
-    }
-    h1 = Math.imul(h3 ^ (h1 >>> 18), 597399067);
-    h2 = Math.imul(h4 ^ (h2 >>> 22), 2869860233);
-    h3 = Math.imul(h1 ^ (h3 >>> 17), 951274213);
-    h4 = Math.imul(h2 ^ (h4 >>> 19), 2716044179);
-    return sfc32(h1, h2, h3, h4);
-}
-
-// Scales
-const SCALES = {
-  pentatonic: [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25], // C Major Pent
-  dorian: [261.63, 293.66, 311.13, 349.23, 392.00, 440.00, 466.16, 523.25],     // C Dorian
-  lydian: [261.63, 293.66, 329.63, 369.99, 392.00, 440.00, 493.88, 523.25],     // C Lydian
-  phrygian: [261.63, 277.18, 311.13, 349.23, 392.00, 415.30, 466.16, 523.25],   // Exotic/Alien
-  wholeTone: [261.63, 293.66, 329.63, 369.99, 415.30, 466.16, 523.25]           // Dreamy/Crystal
+// Scales mapped to Moods
+const SCALES: Record<string, string[]> = {
+  happy: ['C4', 'D4', 'E4', 'G4', 'A4', 'C5', 'D5'], // Pentatonic Major
+  melancholic: ['A3', 'C4', 'D4', 'E4', 'G4', 'A4', 'C5'], // Pentatonic Minor
+  mysterious: ['C4', 'C#4', 'E4', 'F#4', 'G4', 'B4', 'C5'], // Lydian #5 / Exotic
+  aggressive: ['C3', 'C#3', 'F3', 'F#3', 'G3', 'Bb3', 'C4'], // Locrian-ish / Diminished
+  calm: ['C4', 'D4', 'E4', 'F#4', 'G4', 'A4', 'B4'] // Lydian (Dreamy)
 };
 
 export class PlantMusicService implements AudioSource {
-  private ctx: AudioContext | null = null;
-  private output: GainNode | null = null;
-  private analyser: AnalyserNode | null = null;
-  private dataArray: Uint8Array | null = null;
-  private isPlaying: boolean = false;
-  private timeoutIds: number[] = [];
-  private rand: () => number = () => Math.random();
+  private analyser: Tone.Analyser | null = null;
+  private synth: Tone.PolySynth<any> | Tone.FMSynth | Tone.AMSynth | Tone.DuoSynth | null = null;
+  private bassSynth: Tone.MembraneSynth | null = null;
+  private effects: Tone.ToneAudioNode[] = [];
+  private loop: Tone.Loop | null = null;
+  private dna: PlantDNA | null = null;
 
   constructor() {
-    // Init empty
+    // Init nothing
   }
 
-  play(dna: PlantDNA) {
-    this.stop();
-    this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    this.analyser = this.ctx.createAnalyser();
-    this.analyser.fftSize = 1024;
-    this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
-    
-    // Master Output (with Limiter feel)
-    this.output = this.ctx.createGain();
-    this.output.gain.value = 0.35;
-    
-    // Master Compressor
-    const compressor = this.ctx.createDynamicsCompressor();
-    compressor.threshold.value = -20;
-    compressor.knee.value = 40;
-    compressor.ratio.value = 12;
-    compressor.attack.value = 0;
-    compressor.release.value = 0.25;
+  async play(dna: PlantDNA) {
+    await this.stop(); // Ensure clean state
+    await Tone.start(); 
+    this.dna = dna;
 
-    this.output.connect(compressor);
-    compressor.connect(this.analyser);
-    this.analyser.connect(this.ctx.destination);
+    // 1. Setup Master Output & Analyser
+    this.analyser = new Tone.Analyser('fft', 512);
+    Tone.Destination.chain(this.analyser);
 
-    this.isPlaying = true;
+    // 2. Create Instruments
+    this.createInstrument(dna.growthArchitecture);
     
-    // Seed RNG with name
-    this.rand = cyrb128(dna.speciesName);
+    // 3. Create Effects
+    this.createEffects(dna.mood);
 
-    // Start Generation based on Architecture
-    switch (dna.growthArchitecture) {
-      case 'fractal_tree':
-        this.playTree(dna);
-        break;
-      case 'fern_frond':
-        this.playFern(dna);
-        break;
-      case 'organic_vine':
-        this.playVine(dna);
-        break;
-      case 'radial_succulent':
-        this.playSucculent(dna);
-        break;
-      case 'weeping_willow':
-        this.playWillow(dna);
-        break;
-      case 'alien_shrub':
-        this.playAlien(dna);
-        break;
-      case 'crystal_cactus':
-        this.playCrystal(dna);
-        break;
+    // 4. Setup Transport
+    const bpm = 60 + (dna.growthSpeed * 40); // Map 0.5-2.5 to 80-160 BPM
+    Tone.Transport.bpm.value = bpm;
+    
+    this.startGenerativeLoop(dna);
+
+    Tone.Transport.start();
+  }
+
+  private createInstrument(arch: string) {
+    switch(arch) {
+        case 'fractal_tree': 
+            this.synth = new Tone.PolySynth(Tone.FMSynth, {
+                harmonicity: 3, modulationIndex: 10,
+                oscillator: { type: "sine" },
+                envelope: { attack: 0.5, decay: 0.5, sustain: 1, release: 2 },
+                modulation: { type: "square" },
+                modulationEnvelope: { attack: 0.5, decay: 0.01, sustain: 1, release: 0.5 }
+            }).toDestination();
+            break;
+            
+        case 'organic_vine':
+            this.synth = new Tone.PolySynth(Tone.MonoSynth, {
+                oscillator: { type: "triangle" },
+                envelope: { attack: 1, decay: 0.5, sustain: 0.5, release: 2 },
+                filterEnvelope: { attack: 0.06, decay: 0.2, sustain: 0.5, baseFrequency: 200, octaves: 3, exponent: 2 }
+            }).toDestination();
+            break;
+
+        case 'weeping_willow':
+            // Harp-like AM Synth
+            this.synth = new Tone.PolySynth(Tone.AMSynth, {
+                harmonicity: 2.5,
+                oscillator: { type: "fatcustom", partials: [0, 2, 3] },
+                envelope: { attack: 0.01, decay: 0.3, sustain: 0, release: 1 }
+            }).toDestination();
+            break;
+
+        case 'crystal_cactus':
+            // Glassy FM
+            this.synth = new Tone.PolySynth(Tone.FMSynth, {
+                harmonicity: 8, modulationIndex: 20,
+                oscillator: { type: "sine" },
+                envelope: { attack: 0.001, decay: 2, sustain: 0.0, release: 2 },
+                modulation: { type: "sine" },
+                modulationEnvelope: { attack: 0.001, decay: 2, sustain: 0, release: 2 }
+            }).toDestination();
+            break;
+            
+        case 'alien_shrub':
+            // Sci-fi DuoSynth
+            this.synth = new Tone.PolySynth(Tone.DuoSynth, {
+                vibratoAmount: 0.5, vibratoRate: 5, harmonicity: 1.5,
+                voice0: { oscillator: { type: "sawtooth" }, filterEnvelope: { attack: 0.01, decay: 0, sustain: 1, release: 0.5 } },
+                voice1: { oscillator: { type: "sine" }, filterEnvelope: { attack: 0.01, decay: 0, sustain: 1, release: 0.5 } }
+            }).toDestination();
+            (this.synth as Tone.PolySynth<Tone.DuoSynth>).volume.value = -10;
+            break;
+            
+        default:
+            this.synth = new Tone.PolySynth(Tone.Synth).toDestination();
     }
-  }
 
-  private playNote(freq: number, type: OscillatorType, duration: number, startTime: number, vol: number = 0.5, slideTo?: number) {
-    if (!this.ctx || !this.output) return;
-    
-    const osc = this.ctx.createOscillator();
-    const env = this.ctx.createGain();
-    const filter = this.ctx.createBiquadFilter();
+    this.bassSynth = new Tone.MembraneSynth({
+        pitchDecay: 0.05, octaves: 4, oscillator: { type: "sine" },
+        envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 1.4 }
+    }).toDestination();
+    this.bassSynth.volume.value = -10;
+}
 
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, startTime);
-    if (slideTo) {
-        osc.frequency.exponentialRampToValueAtTime(slideTo, startTime + duration);
+  private createEffects(mood: string) {
+    if (!this.synth) return;
+
+    // Dispose old effects safely
+    this.effects.forEach(e => e.dispose());
+    this.effects = [];
+
+    const reverb = new Tone.Reverb({ decay: 4, wet: 0.4 }).toDestination();
+    this.effects.push(reverb);
+
+    const delay = new Tone.FeedbackDelay("8n", 0.3).toDestination();
+    this.effects.push(delay);
+
+    if (mood === 'mysterious' || mood === 'calm') {
+        const chorus = new Tone.Chorus(4, 2.5, 0.5).toDestination().start();
+        this.synth.connect(chorus);
+        this.effects.push(chorus);
+        chorus.connect(reverb);
+    } 
+    else if (mood === 'aggressive' || mood === 'alien_shrub') {
+        const distortion = new Tone.Distortion(0.4).toDestination();
+        this.synth.connect(distortion);
+        this.effects.push(distortion);
+        distortion.connect(reverb);
+    } else {
+        this.synth.connect(reverb);
     }
-
-    // Envelope
-    env.gain.setValueAtTime(0, startTime);
-    env.gain.linearRampToValueAtTime(vol, startTime + 0.05);
-    env.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-
-    // Filter for lo-fi feel
-    filter.type = 'lowpass';
-    filter.frequency.value = 1500 + this.rand() * 1000;
-
-    osc.connect(filter);
-    filter.connect(env);
-    env.connect(this.output);
-
-    osc.start(startTime);
-    osc.stop(startTime + duration + 0.1);
+    
+    this.synth.connect(delay);
   }
 
-  // Helper for FM Synthesis (Metallic, Bell-like sounds)
-  private playFMSynth(freq: number, duration: number, startTime: number, modulationIndex: number = 100) {
-      if(!this.ctx || !this.output) return;
-
-      const carrier = this.ctx.createOscillator();
-      const modulator = this.ctx.createOscillator();
-      const modGain = this.ctx.createGain();
-      const env = this.ctx.createGain();
-
-      carrier.frequency.value = freq;
-      modulator.frequency.value = freq * (Math.floor(this.rand() * 3) + 1); // Harmonic ratio
-      modGain.gain.value = modulationIndex;
-
-      modulator.connect(modGain);
-      modGain.connect(carrier.frequency);
+  private startGenerativeLoop(dna: PlantDNA) {
+      const scale = SCALES[dna.mood] || SCALES.happy;
+      const energy = dna.energy; // 0.0 to 1.0
       
-      env.gain.setValueAtTime(0, startTime);
-      env.gain.linearRampToValueAtTime(0.3, startTime + 0.05);
-      env.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+      this.loop = new Tone.Loop((time) => {
+          // SAFETY CHECK: Prevent using disposed synths
+          if (!this.synth || this.synth.disposed || !this.bassSynth || this.bassSynth.disposed) return;
 
-      carrier.connect(env);
-      env.connect(this.output);
+          const r = Math.random();
 
-      carrier.start(startTime);
-      modulator.start(startTime);
-      carrier.stop(startTime + duration);
-      modulator.stop(startTime + duration);
-  }
-
-  // 1. Tree: Deep, Slow, resonant, evolving drone
-  private playTree(dna: PlantDNA) {
-    if (!this.ctx) return;
-    const baseFreq = 65.41; // Low C
-    
-    const loop = () => {
-        if (!this.isPlaying || !this.ctx) return;
-        const time = this.ctx.currentTime;
-        
-        // Evolving Drone - change harmonic every loop
-        const harmonic = 1 + Math.floor(this.rand() * 3) * 0.5;
-        this.playNote(baseFreq * harmonic, 'triangle', 6, time, 0.4);
-        this.playNote(baseFreq * 1.01, 'sine', 6, time, 0.2); // Detuned sub
-        
-        // Wind Chimes (More complex rhythm)
-        if (this.rand() > 0.4) {
-            const delay = this.rand() * 2;
-            const note = SCALES.dorian[Math.floor(this.rand() * SCALES.dorian.length)] * 2;
-            this.playNote(note, 'sine', 2.5, time + delay, 0.15);
-            // Echo
-            this.playNote(note, 'sine', 2.0, time + delay + 0.3, 0.05);
-        }
-
-        const nextTime = (5000 / dna.growthSpeed);
-        this.timeoutIds.push(window.setTimeout(loop, nextTime));
-    }
-    loop();
-  }
-
-  // 2. Fern: Fast, repetitive, plucky, polyrhythmic
-  private playFern(dna: PlantDNA) {
-    if (!this.ctx) return;
-    const sequence = [0, 2, 3, 5, 7, 5, 3, 2, 0, 3, 5, 7]; 
-    let step = 0;
-
-    const loop = () => {
-        if (!this.isPlaying || !this.ctx) return;
-        const time = this.ctx.currentTime;
-        
-        const noteIdx = sequence[step % sequence.length];
-        const freq = SCALES.pentatonic[noteIdx % SCALES.pentatonic.length];
-        
-        // Pluck
-        this.playNote(freq, 'sawtooth', 0.15, time, 0.1);
-        
-        // Off-beat percussion (synthesized hat)
-        if (step % 2 !== 0) {
-             const osc = this.ctx.createOscillator();
-             const g = this.ctx.createGain();
-             osc.frequency.setValueAtTime(8000, time);
-             g.gain.setValueAtTime(0.02, time);
-             g.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
-             osc.connect(g);
-             g.connect(this.output!);
-             osc.start(time + 0.1); // Syncopated
-             osc.stop(time + 0.15);
-        }
-
-        step++;
-        const speed = (250 / dna.growthSpeed); 
-        this.timeoutIds.push(window.setTimeout(loop, speed));
-    }
-    loop();
-  }
-
-  // 3. Vine: Wandering, Portamento, Theremin
-  private playVine(dna: PlantDNA) {
-    if (!this.ctx || !this.output) return;
-    
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.value = 329.63;
-    gain.gain.value = 0.0; // Start silent
-    osc.connect(gain);
-    gain.connect(this.output);
-    osc.start();
-    
-    // Smooth entry
-    gain.gain.linearRampToValueAtTime(0.2, this.ctx.currentTime + 1);
-
-    const wander = () => {
-        if (!this.isPlaying || !this.ctx) {
-            osc.stop();
-            return;
-        }
-        const time = this.ctx.currentTime;
-        const nextNote = SCALES.lydian[Math.floor(this.rand() * SCALES.lydian.length)];
-        
-        // Long slide
-        osc.frequency.linearRampToValueAtTime(nextNote, time + 2.0);
-        
-        // Tremolo volume
-        gain.gain.linearRampToValueAtTime(0.1 + (this.rand()*0.15), time + 2.0);
-
-        this.timeoutIds.push(window.setTimeout(wander, 2000 / dna.growthSpeed));
-    };
-    wander();
-  }
-
-  // 4. Succulent: Polyphonic swelling pads
-  private playSucculent(dna: PlantDNA) {
-    if (!this.ctx) return;
-    
-    const loop = () => {
-        if (!this.isPlaying || !this.ctx) return;
-        const time = this.ctx.currentTime;
-        
-        const rootIdx = Math.floor(this.rand() * 4);
-        const chord = [
-            SCALES.pentatonic[rootIdx], 
-            SCALES.pentatonic[(rootIdx + 2) % 8], 
-            SCALES.pentatonic[(rootIdx + 4) % 8]
-        ];
-
-        chord.forEach((freq, i) => {
-             const osc = this.ctx!.createOscillator();
-             const env = this.ctx!.createGain();
-             osc.type = 'sine';
-             osc.frequency.value = freq;
-             
-             // Very slow swell
-             env.gain.setValueAtTime(0, time);
-             env.gain.linearRampToValueAtTime(0.12, time + 3); 
-             env.gain.linearRampToValueAtTime(0, time + 8);    
-
-             osc.connect(env);
-             env.connect(this.output!);
-             osc.start(time);
-             osc.stop(time + 8.5);
-        });
-
-        const nextTime = (6000 / dna.growthSpeed);
-        this.timeoutIds.push(window.setTimeout(loop, nextTime));
-    }
-    loop();
-  }
-
-  // 5. Willow: Descending runs, water-like, harp
-  private playWillow(dna: PlantDNA) {
-      if(!this.ctx) return;
-
-      const loop = () => {
-          if(!this.isPlaying || !this.ctx) return;
-          const time = this.ctx.currentTime;
-
-          // Play a descending run
-          const startIdx = 4 + Math.floor(this.rand() * 3);
-          for(let i=0; i<5; i++) {
-              const note = SCALES.pentatonic[Math.max(0, startIdx - i)];
-              // Slight delay between notes = strum
-              this.playNote(note, 'sine', 1.0, time + (i * 0.15), 0.15);
-          }
-          
-          // Deep bass note
-          if(this.rand() > 0.5) {
-            this.playNote(SCALES.pentatonic[0] / 2, 'triangle', 4, time, 0.3);
+          // 1. Bass (Structure) - Weighted by Energy
+          // Low energy = sparse bass. High energy = driving bass.
+          if (r < (0.2 + energy * 0.3)) {
+             const bassNote = scale[0].replace('4', '2').replace('3', '1'); 
+             this.bassSynth.triggerAttackRelease(bassNote, "8n", time);
           }
 
-          const nextTime = (3000 / dna.growthSpeed) + (this.rand() * 1000);
-          this.timeoutIds.push(window.setTimeout(loop, nextTime));
-      }
-      loop();
-  }
-
-  // 6. Alien: FM Synthesis, dissonant, metallic, glitchy
-  private playAlien(dna: PlantDNA) {
-      if(!this.ctx) return;
-
-      const loop = () => {
-          if(!this.isPlaying || !this.ctx) return;
-          const time = this.ctx.currentTime;
-
-          const freq = SCALES.phrygian[Math.floor(this.rand() * SCALES.phrygian.length)];
+          // 2. Melody / Texture
+          // Silence probability (Rest) inversely proportional to energy
+          const playProbability = 0.3 + (energy * 0.6); 
           
-          // FM blast
-          this.playFMSynth(freq, 0.5, time, 500);
-          
-          // Random high bleeps
-          if (this.rand() > 0.5) {
-             this.playNote(freq * 4, 'square', 0.1, time + 0.2, 0.05);
-             this.playNote(freq * 4.5, 'square', 0.1, time + 0.3, 0.05);
+          if (r < playProbability) {
+              const noteIdx = Math.floor(Math.random() * scale.length);
+              const note = scale[noteIdx];
+              
+              // Dynamic Velocity
+              const velocity = 0.5 + (Math.random() * 0.5);
+
+              // High Energy = Short notes (16n), Low Energy = Long notes (2n)
+              const duration = energy > 0.7 ? "16n" : (energy < 0.3 ? "2n" : "4n");
+              
+              // Chord Chance (Polyphony)
+              if (Math.random() > 0.85) {
+                  const chord = [
+                      note,
+                      scale[(noteIdx + 2) % scale.length],
+                      scale[(noteIdx + 4) % scale.length]
+                  ];
+                  // Use 'any' cast because PolySynth trigger signature varies in TS definition vs implementation
+                  (this.synth as any).triggerAttackRelease(chord, duration, time, velocity);
+              } else {
+                  (this.synth as any).triggerAttackRelease(note, duration, time, velocity);
+              }
           }
-          
-          // Low growl
-          if (this.rand() > 0.7) {
-              this.playFMSynth(50, 2.0, time, 200);
-          }
-
-          const nextTime = (1000 / dna.growthSpeed) * (this.rand() + 0.5); // Irregular rhythm
-          this.timeoutIds.push(window.setTimeout(loop, nextTime));
-      }
-      loop();
-  }
-
-  // 7. Crystal: High pitched, pure, ringing, additive
-  private playCrystal(dna: PlantDNA) {
-      if(!this.ctx) return;
-
-      const loop = () => {
-          if(!this.isPlaying || !this.ctx) return;
-          const time = this.ctx.currentTime;
-
-          const freq = SCALES.wholeTone[Math.floor(this.rand() * SCALES.wholeTone.length)] * 2;
-          
-          // Additive chime (Fundamental + Overtone)
-          this.playNote(freq, 'sine', 3.0, time, 0.1);
-          this.playNote(freq * 2.5, 'sine', 3.0, time, 0.05); // Non-integer harmonic = bell-like
-          
-          // Occasional sparkle
-          if (this.rand() > 0.6) {
-              this.playNote(freq * 4, 'triangle', 0.5, time + 0.1, 0.05);
-          }
-
-          const nextTime = (2000 / dna.growthSpeed) + (this.rand() * 2000); // Sparse
-          this.timeoutIds.push(window.setTimeout(loop, nextTime));
-      }
-      loop();
+      }, "8n").start(0);
   }
 
   getFrequencyData() {
-    if (!this.analyser || !this.dataArray) {
+    if (!this.analyser || this.analyser.disposed) {
         return { bass: 0, mid: 0, treble: 0, raw: new Uint8Array(0) };
     }
-    this.analyser.getByteFrequencyData(this.dataArray as any);
     
-    const bufferLength = this.dataArray.length;
-    const third = Math.floor(bufferLength / 3);
+    try {
+        const values = this.analyser.getValue();
+        if (values instanceof Float32Array) {
+             const raw = new Uint8Array(values.length);
+             let bassSum = 0, midSum = 0, trebleSum = 0;
+             
+             const bassCount = Math.floor(values.length * 0.1); 
+             const midCount = Math.floor(values.length * 0.4); 
+             
+             for(let i=0; i<values.length; i++) {
+                 // Map dB (-100 to 0) to 0-255 range
+                 let val = (values[i] + 100) * 2.55; 
+                 val = Math.max(0, Math.min(255, val));
+                 raw[i] = val;
+                 
+                 if (i < bassCount) bassSum += val;
+                 else if (i < bassCount + midCount) midSum += val;
+                 else trebleSum += val;
+             }
+             
+             return {
+                 bass: bassSum / bassCount,
+                 mid: midSum / midCount,
+                 treble: trebleSum / (values.length - bassCount - midCount),
+                 raw: raw
+             };
+        }
+    } catch (e) {
+        console.warn("Analyser access failed", e);
+    }
 
-    const getAvg = (start: number, end: number) => {
-      let sum = 0;
-      for (let i = start; i < end; i++) {
-        sum += this.dataArray![i];
-      }
-      return sum / (end - start);
-    };
-
-    return {
-      bass: getAvg(0, third),
-      mid: getAvg(third, third * 2),
-      treble: getAvg(third * 2, bufferLength),
-      raw: this.dataArray as Uint8Array
-    };
+    return { bass: 0, mid: 0, treble: 0, raw: new Uint8Array(0) };
   }
 
-  stop() {
-    this.isPlaying = false;
-    this.timeoutIds.forEach(id => clearTimeout(id));
-    this.timeoutIds = [];
+  async stop() {
+    // 1. CRITICAL: Cancel future events BEFORE disposing instruments
+    Tone.Transport.cancel();
+    Tone.Transport.stop();
+
+    // 2. Dispose Loop
+    if (this.loop) {
+        this.loop.stop();
+        this.loop.dispose();
+        this.loop = null;
+    }
+
+    // 3. Dispose Instruments
+    if (this.synth) {
+        if ('releaseAll' in this.synth && typeof this.synth.releaseAll === 'function') {
+            this.synth.releaseAll();
+        }
+        this.synth.dispose();
+        this.synth = null;
+    }
+    if (this.bassSynth) {
+        this.bassSynth.dispose();
+        this.bassSynth = null;
+    }
     
-    if (this.ctx) {
-      this.ctx.close();
-      this.ctx = null;
+    // 4. Dispose Effects
+    this.effects.forEach(e => e.dispose());
+    this.effects = [];
+
+    if (this.analyser) {
+        this.analyser.dispose();
+        this.analyser = null;
     }
   }
   
