@@ -726,7 +726,7 @@ const CHAIN_GARDEN_NFT_ABI = [
 
 
 // Placeholder Address (Sepolia Testnet) - Replace with your real contract address
-const CONTRACT_ADDRESS = "0xb341Bd070901513cB82220B6e109A2a8495deF17"; 
+const CONTRACT_ADDRESS = "0xb02bedc80a8c49a97a0c9abf962dc7fcb60eb7ec"; 
 
 export class Web3Service {
   private provider: BrowserProvider | null = null;
