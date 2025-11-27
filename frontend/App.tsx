@@ -9,6 +9,7 @@ import PlantCanvas from './components/PlantCanvas';
 import MintModal from './components/MintModal';
 import SpecimenDetailModal from './components/SpecimenDetailModal';
 import { PlantDNA, Specimen, AudioSource } from './types';
+import { uploadSpecimenToIPFS } from './services/ipfsService';
 
 // Default DNA if no Gemini
 const DEFAULT_DNA: PlantDNA = {
@@ -276,10 +277,11 @@ const App: React.FC = () => {
       
       setIsMinting(true);
       try {
-          // 1. "Upload" Metadata (Simulated)
-          const metadata = JSON.stringify(mintTargetSpecimen);
+          // 1. "Upload" Image and Metadata
+          const uploadResult = await uploadSpecimenToIPFS(mintTargetSpecimen);
+
           // 2. Mint
-          const result = await web3ServiceRef.current.mintNFT(metadata);
+          const result = await web3ServiceRef.current.mintNFT(uploadResult.metadata.uri);
           
           // 3. Update Collection with Result
           const updatedSpecimen = {

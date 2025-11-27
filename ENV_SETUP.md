@@ -19,6 +19,12 @@ ETHERSCAN_API_KEY=your_etherscan_key
 # Gemini API Key (前端AI功能使用)
 # 从以下地址获取：https://makersuite.google.com/app/apikey
 GEMINI_API_KEY=your_gemini_key
+
+# Pinata JWT (IPFS上传)
+# 从以下地址获取：https://www.pinata.cloud/
+VITE_PINATA_JWT=your_Pinata_JWT_Token（必填）
+# VITE_PINATA_API_BASE=https://api.pinata.cloud（可选，代码中已设置）
+# VITE_PINATA_GATEWAY=https://gateway.pinata.cloud/ipfs（可选，代码中已设置）
 ```
 
 ## 获取API密钥
@@ -42,6 +48,15 @@ GEMINI_API_KEY=your_gemini_key
 1. 访问 [Google AI Studio](https://makersuite.google.com/app/apikey)
 2. 登录 Google 账户
 3. 创建新的 API Key
+
+### Pinata JWT
+1. 访问 [Pinata](https://www.pinata.cloud/)
+2. 登录 Google/GitHub 账户
+3. 获取 JWT Token
+- 登录后进入 Dashboard
+- 点击右上角头像 → "API Keys"
+- 点击 "New Key"，填写名称，勾选 "Admin"
+- 复制 JWT Token（只显示一次，请保存）
 
 ## 安全提示
 
