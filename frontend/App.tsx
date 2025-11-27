@@ -6,7 +6,7 @@ import { PlantMusicService } from './services/plantMusicService';
 import { generatePlantDNA } from './services/geminiService';
 import { Web3Service } from './services/web3Service';
 import PlantCanvas from './components/PlantCanvas';
-import MintModal from './components/MintModal';
+import MintModal, { AssetSelection } from './components/MintModal';
 import SpecimenDetailModal from './components/SpecimenDetailModal';
 import { PlantDNA, Specimen, AudioSource, LabState, BioState } from './types';
 import { uploadSpecimenToIPFS } from './services/ipfsService';
@@ -476,13 +476,24 @@ const App: React.FC = () => {
       setShowMintModal(true);
   };
 
-  const confirmMint = async () => {
+  const confirmMint = async (selection: AssetSelection) => {
       if (!mintTargetSpecimen || !walletAddress) return;
       setIsMinting(true);
       try {
-          // 1. "Upload" Image and Metadata
-          const uploadResult = await uploadSpecimenToIPFS(mintTargetSpecimen);
 
+          if (!selection.dna) {
+            console.warn("DNA exclusion not yet supported; proceeding with DNA included.");
+          }
+          // // 1. "Upload" Image and Metadata
+          // const uploadResult = await uploadSpecimenToIPFS(mintTargetSpecimen, {
+          //   includeDNA: selection.dna,
+          //   includeAudio: selection.audio,
+          //   includeVoice: selection.voice,
+          // });
+          // 1. "Upload" Image and Metadata
+          // NOTE: 当前 IPFS 服务默认总是上传图片 + DNA。
+          // selection.audio / selection.voice 预留给后续扩展。
+          const uploadResult = await uploadSpecimenToIPFS(mintTargetSpecimen);
           // 2. Mint
           const result = await web3ServiceRef.current.mintNFT(uploadResult.metadata.uri);
           
