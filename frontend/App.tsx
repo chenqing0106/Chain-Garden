@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Mic, Disc, Save, RefreshCw, Leaf, Hash, Volume2, Upload, Sliders, Play, Pause, Music, Wallet, Trash2, Eye, TestTube, ArrowRight, XCircle, PlayCircle, Activity, StopCircle, Check } from 'lucide-react';
+import { Mic, Disc, Save, RefreshCw, Leaf, Hash, Volume2, Upload, Sliders, Play, Pause, Music, Wallet, Trash2, Eye, TestTube, ArrowRight, XCircle, PlayCircle, Activity, StopCircle, Check, MessageCircle, Mic2, RefreshCcw } from 'lucide-react';
 import { AudioAnalyzer } from './services/audioService';
 import { PlantMusicService } from './services/plantMusicService';
 import { generatePlantDNA } from './services/geminiService';
@@ -27,6 +27,18 @@ const DEFAULT_DNA: PlantDNA = {
 
 const ARCHITECTURES = ["fractal_tree", "organic_vine", "radial_succulent", "fern_frond", "weeping_willow", "alien_shrub", "crystal_cactus"];
 
+const REFLECTION_QUESTIONS = [
+    "What are you holding onto that you need to let go of?",
+    "Describe a moment where you felt truly at peace.",
+    "What does your silence sound like today?",
+    "Who do you wish you could speak to right now?",
+    "What color is your current emotion?",
+    "What is growing inside you that needs nourishment?",
+    "If this plant could hear your secrets, what would you say?",
+    "What is a memory that makes you smile?",
+    "What are you afraid to say out loud?"
+];
+
 const App: React.FC = () => {
   // --- STATE MANAGEMENT ---
   const [labState, setLabState] = useState<LabState>('EMPTY');
@@ -34,9 +46,15 @@ const App: React.FC = () => {
 
   // Audio State
   const [analyzer, setAnalyzer] = useState<AudioSource | null>(null);
-  const [inputMode, setInputMode] = useState<'mic' | 'file' | 'none'>('none');
+  const [inputMode, setInputMode] = useState<'mic' | 'file' | 'reflection' | 'none'>('none');
   const [isListening, setIsListening] = useState(false);
   const [isPlayingFile, setIsPlayingFile] = useState(false);
+  
+  // Reflection State
+  const [reflectionQuestion, setReflectionQuestion] = useState(REFLECTION_QUESTIONS[0]);
+  const [reflectionBlob, setReflectionBlob] = useState<Blob | null>(null);
+  const [isRecordingReflection, setIsRecordingReflection] = useState(false);
+  const reflectionRecorderRef = useRef<MediaRecorder | null>(null);
   
   // Output State (Plant Voice)
   const [isSinging, setIsSinging] = useState(false);
@@ -187,13 +205,26 @@ const App: React.FC = () => {
     setRecordedBlob(null);
     setInputMode('none');
     setAnalyzer(null);
+    
+    // Clean reflection
+    if(reflectionRecorderRef.current && reflectionRecorderRef.current.state === 'recording') {
+        reflectionRecorderRef.current.stop();
+    }
+    setReflectionBlob(null);
+    setIsRecordingReflection(false);
   };
 
-  const handleAudioInputToggle = async (mode: 'mic' | 'file') => {
+  const handleAudioInputToggle = async (mode: 'mic' | 'file' | 'reflection') => {
     if (isListening) {
         audioAnalyzerRef.current.cleanup();
         setIsListening(false);
         setIsPlayingFile(false);
+    }
+    
+    // Clean up reflection if switching away
+    if (inputMode === 'reflection' && mode !== 'reflection') {
+        setReflectionBlob(null);
+        setIsRecordingReflection(false);
     }
     
     if (inputMode === mode && isListening) {
@@ -204,7 +235,8 @@ const App: React.FC = () => {
 
     setInputMode(mode);
 
-    if (mode === 'mic') {
+    if (mode === 'mic' || mode === 'reflection') {
+        // Reflection uses Mic input visually as well
         try {
             await audioAnalyzerRef.current.startMicrophone();
             setAnalyzer(audioAnalyzerRef.current);
@@ -224,6 +256,59 @@ const App: React.FC = () => {
     }
   };
 
+  // REFLECTION (VOICE) LOGIC
+  const cycleQuestion = () => {
+      const idx = Math.floor(Math.random() * REFLECTION_QUESTIONS.length);
+      setReflectionQuestion(REFLECTION_QUESTIONS[idx]);
+  };
+
+  const discardReflection = () => {
+      setReflectionBlob(null);
+      setIsRecordingReflection(false);
+  };
+
+  const toggleReflectionRecording = async () => {
+      if (isRecordingReflection) {
+          // STOP
+          if (reflectionRecorderRef.current && reflectionRecorderRef.current.state === 'recording') {
+              reflectionRecorderRef.current.stop();
+          }
+          setIsRecordingReflection(false);
+          // Don't stop visuals yet, let user see the plant pulsing
+      } else {
+          // START
+          setReflectionBlob(null);
+          try {
+              // We need a stream for recording. 
+              // AudioAnalyzer has one but it's encapsulated. Requesting a new one for simple logic.
+              const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+              const recorder = new MediaRecorder(stream);
+              const chunks: BlobPart[] = [];
+              
+              recorder.ondataavailable = (e) => chunks.push(e.data);
+              recorder.onstop = () => {
+                  const blob = new Blob(chunks, { type: 'audio/webm' });
+                  setReflectionBlob(blob);
+              };
+              
+              recorder.start();
+              reflectionRecorderRef.current = recorder;
+              setIsRecordingReflection(true);
+              
+              // Ensure visuals are on
+              if (!isListening) {
+                  await audioAnalyzerRef.current.startMicrophone();
+                  setAnalyzer(audioAnalyzerRef.current);
+                  setIsListening(true);
+              }
+              
+          } catch (e) {
+              console.error("Reflection recording failed", e);
+          }
+      }
+  };
+
+
   const handleSonify = async () => {
     if (isSinging) {
         await plantMusicRef.current.stop();
@@ -237,7 +322,7 @@ const App: React.FC = () => {
     }
   };
   
-  // RECORDING HANDLER
+  // MUSIC RECORDING HANDLER
   const toggleRecording = async () => {
       if (isRecording) {
           const blob = await plantMusicRef.current.stopRecording();
@@ -329,14 +414,20 @@ const App: React.FC = () => {
   const handleSnapshotCaptured = useCallback(async (dataUrl: string) => {
     setTriggerSnapshot(false);
     
-    // Prepare audio data if recorded
+    // 1. Prepare Music Audio
     let audioString: string | undefined = undefined;
     if (recordedBlob) {
         try {
             audioString = await blobToBase64(recordedBlob);
-        } catch (e) {
-            console.error("Audio conversion failed", e);
-        }
+        } catch (e) { console.error("Audio conversion failed", e); }
+    }
+
+    // 2. Prepare Reflection Audio
+    let reflectionString: string | undefined = undefined;
+    if (reflectionBlob) {
+        try {
+            reflectionString = await blobToBase64(reflectionBlob);
+        } catch (e) { console.error("Reflection conversion failed", e); }
     }
 
     const capturedPrompt = isManualMode ? "Manual Tuning" : (prompt || "Unknown Vibe");
@@ -346,7 +437,9 @@ const App: React.FC = () => {
       prompt: capturedPrompt,
       timestamp: Date.now(),
       imageData: dataUrl,
-      audioData: audioString
+      audioData: audioString,
+      reflectionAudioData: reflectionString,
+      reflectionQuestion: reflectionBlob ? reflectionQuestion : undefined // Save question only if audio exists
     };
 
     setCollection(prev => [newSpecimen, ...prev]);
@@ -356,7 +449,7 @@ const App: React.FC = () => {
     setLabState('EMPTY');
     resetAllAudio();
     
-  }, [dna, prompt, isManualMode, recordedBlob]);
+  }, [dna, prompt, isManualMode, recordedBlob, reflectionBlob, reflectionQuestion]);
 
   const handleCompost = () => {
       setLabState('EMPTY');
@@ -621,7 +714,7 @@ const App: React.FC = () => {
                       <div className="p-4 bg-gray-100 border-2 border-riso-black text-center space-y-2">
                           <div className="animate-pulse font-bold text-riso-green">SPECIMEN ACTIVE</div>
                           
-                          {/* UPDATED: DNA Stats in GROWING State */}
+                          {/* DNA Stats in GROWING State */}
                           <div className="text-xs space-y-1 border-t border-b border-black py-2 text-left">
                               <div className="flex justify-between"><span>SPECIES:</span><span className="font-bold truncate w-24 text-right">{dna.speciesName}</span></div>
                               <div className="flex justify-between"><span>ARCH:</span><span>{dna.growthArchitecture.replace('_', ' ')}</span></div>
@@ -661,29 +754,65 @@ const App: React.FC = () => {
                       <Volume2 className="w-5 h-5 text-riso-blue" />
                       <h2 className="font-bold text-lg underline decoration-wavy decoration-riso-pink">NUTRIENTS</h2>
                     </div>
-                    <div className="flex gap-1 text-xs font-bold">
-                      <button onClick={() => handleAudioInputToggle('mic')} className={`px-2 py-1 border border-black ${inputMode === 'mic' ? 'bg-riso-black text-white' : 'hover:bg-gray-100'}`}>MIC</button>
-                      <button onClick={() => handleAudioInputToggle('file')} className={`px-2 py-1 border border-black ${inputMode === 'file' ? 'bg-riso-black text-white' : 'hover:bg-gray-100'}`}>FILE</button>
+                    <div className="flex gap-1 text-[10px] font-bold">
+                      <button onClick={() => handleAudioInputToggle('mic')} className={`px-1 py-1 border border-black ${inputMode === 'mic' ? 'bg-riso-black text-white' : 'hover:bg-gray-100'}`}>MIC</button>
+                      <button onClick={() => handleAudioInputToggle('file')} className={`px-1 py-1 border border-black ${inputMode === 'file' ? 'bg-riso-black text-white' : 'hover:bg-gray-100'}`}>FILE</button>
+                      <button onClick={() => handleAudioInputToggle('reflection')} className={`px-1 py-1 border border-black ${inputMode === 'reflection' ? 'bg-riso-black text-white' : 'hover:bg-gray-100'}`}>VOICE</button>
                     </div>
                   </div>
                   
-                  <div className="text-[10px] font-mono mb-2 text-gray-500">
-                     {inputMode === 'none' ? "SELECT SOURCE TO FEED PLANT" : "SOURCE CONNECTED. AWAITING SIGNAL."}
-                  </div>
+                  {inputMode === 'reflection' ? (
+                      <div className="space-y-3">
+                          <div className="bg-riso-yellow/30 p-3 border-2 border-riso-black relative">
+                              <MessageCircle className="absolute -top-2 -right-2 bg-white border border-black p-1 w-6 h-6" />
+                              <div className="text-[10px] font-bold text-gray-500 mb-1">SELF-EXPLORATION QUERY:</div>
+                              <p className="font-mono text-sm font-bold leading-tight">{reflectionQuestion}</p>
+                              <button onClick={cycleQuestion} className="absolute bottom-1 right-1 p-1 hover:bg-black/10 rounded-full">
+                                  <RefreshCcw className="w-3 h-3"/>
+                              </button>
+                          </div>
+                          
+                          <button 
+                             onClick={toggleReflectionRecording}
+                             className={`w-full py-3 px-4 font-bold border-2 border-riso-black transition-all flex items-center justify-center gap-2
+                             ${isRecordingReflection ? 'bg-red-500 text-white animate-pulse' : 'bg-white hover:bg-gray-100'}`}
+                          >
+                             {isRecordingReflection ? <><StopCircle /> STOP RECORDING</> : <><Mic2 /> HOLD TO ANSWER</>}
+                          </button>
 
-                  {inputMode === 'mic' || inputMode === 'none' ? (
-                    <button 
-                      onClick={() => handleAudioInputToggle('mic')}
-                      className={`w-full py-3 px-4 font-bold border-2 border-riso-black transition-all duration-150 flex items-center justify-center gap-2
-                        ${inputMode === 'mic' && isListening
-                          ? 'bg-riso-pink text-white shadow-none translate-y-1' 
-                          : 'bg-riso-yellow hover:bg-yellow-300 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px]'
-                        }`}
-                    >
-                      {inputMode === 'mic' && isListening ? <><Disc className="animate-spin" /> HALT STREAM</> : <><Mic /> OPEN MIC</>}
-                    </button>
+                          {reflectionBlob && !isRecordingReflection && (
+                             <div className="flex gap-2 mt-2">
+                                <div className="flex-1 text-center text-xs font-bold text-riso-green flex items-center justify-center gap-1 border border-riso-green bg-green-50 p-2">
+                                    <Check className="w-3 h-3"/> CAPTURED
+                                </div>
+                                <button onClick={discardReflection} className="px-3 border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-colors" title="Discard Recording">
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                             </div>
+                          )}
+                          <div className="text-[9px] text-gray-500 text-center leading-tight">
+                              Your voice shapes the structure. <br/>Save specimen to keep this recording.
+                          </div>
+                      </div>
+                  ) : (inputMode === 'mic' || inputMode === 'none') ? (
+                    <>
+                      <div className="text-[10px] font-mono mb-2 text-gray-500">
+                         {inputMode === 'none' ? "SELECT SOURCE TO FEED PLANT" : "SOURCE CONNECTED. AWAITING SIGNAL."}
+                      </div>
+                      <button 
+                        onClick={() => handleAudioInputToggle('mic')}
+                        className={`w-full py-3 px-4 font-bold border-2 border-riso-black transition-all duration-150 flex items-center justify-center gap-2
+                          ${inputMode === 'mic' && isListening
+                            ? 'bg-riso-pink text-white shadow-none translate-y-1' 
+                            : 'bg-riso-yellow hover:bg-yellow-300 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px]'
+                          }`}
+                      >
+                        {inputMode === 'mic' && isListening ? <><Disc className="animate-spin" /> HALT STREAM</> : <><Mic /> OPEN MIC</>}
+                      </button>
+                    </>
                   ) : (
                      <div className="space-y-2">
+                       <div className="text-[10px] font-mono mb-2 text-gray-500">PLAY MP3 TO STIMULATE GROWTH</div>
                        <div className="flex gap-2">
                          <button 
                             onClick={() => fileInputRef.current?.click()}
@@ -798,6 +927,7 @@ const App: React.FC = () => {
                              <span className="w-2 h-2 rounded-full bg-gray-300"></span>
                          )}
                          {specimen.audioData && <Music className="w-3 h-3 text-riso-pink ml-1" />}
+                         {specimen.reflectionAudioData && <MessageCircle className="w-3 h-3 text-riso-blue ml-1" />}
                      </div>
                      <p className="text-gray-500 italic truncate">"{specimen.prompt}"</p>
                      <p className="text-riso-green mt-1 text-[10px]">{new Date(specimen.timestamp).toLocaleDateString()}</p>

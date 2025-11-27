@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { X, Zap, Trash2, Share2, Activity, FileText, Hash, Download } from 'lucide-react';
+import { X, Zap, Trash2, Share2, Activity, FileText, Hash, Download, MessageCircle } from 'lucide-react';
 import { Specimen } from '../types';
 
 interface SpecimenDetailModalProps {
@@ -79,6 +79,27 @@ const SpecimenDetailModal: React.FC<SpecimenDetailModalProps> = ({
                     "{specimen.prompt}"
                 </p>
             </div>
+            
+            {/* Reflection Playback */}
+            {specimen.reflectionAudioData && (
+                <div className="mb-6 bg-riso-green/10 border border-riso-green p-4 relative">
+                    <div className="absolute -top-3 left-2 bg-riso-paper px-1 text-xs font-bold text-riso-green flex items-center gap-1">
+                        <MessageCircle className="w-3 h-3" /> VOICE REFLECTION
+                    </div>
+                    {/* Display the Question if available */}
+                    {specimen.reflectionQuestion && (
+                        <p className="font-bold text-xs mb-2 italic">
+                            "{specimen.reflectionQuestion}"
+                        </p>
+                    )}
+                    <div className="mt-2">
+                        <audio controls src={specimen.reflectionAudioData} className="w-full h-8" />
+                    </div>
+                    <p className="text-[10px] text-gray-500 mt-1 italic">
+                        Recorded response to self-exploration query.
+                    </p>
+                </div>
+            )}
 
             {/* DNA Stats */}
             <div className="grid grid-cols-2 gap-4 mb-6 text-xs">
