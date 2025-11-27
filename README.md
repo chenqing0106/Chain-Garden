@@ -102,12 +102,12 @@ chain-garden/
 
 1. **NFT上链功能** ⚠️ **关键任务**
    - 📖 **详细部署指南请查看：[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)**
-   - [ ] 部署 ChainGardenNFT 合约到 Sepolia 测试网（使用 Remix）
-   - [ ] 更新 `frontend/services/web3Service.ts` 中的合约地址
-   - [ ] 实现真实的 `mintNFT()` 函数（当前为模拟）
+   - [x] 部署 ChainGardenNFT 合约到 Sepolia 测试网（使用 Remix）
+   - [x] 更新 `frontend/services/web3Service.ts` 中的合约地址
+   - [x] 实现真实的 `mintNFT()` 函数
    - [ ] 实现元数据上传到 IPFS 或中心化服务器
-   - [ ] 处理交易确认和错误处理
-   - [ ] 添加交易状态提示（pending/confirmed/failed）
+   <!-- - [ ] 处理交易确认和错误处理
+   - [ ] 添加交易状态提示（pending/confirmed/failed） -->
 
 2. **元数据管理**
    - [ ] 设置 IPFS 节点（Pinata/Infura/Web3.Storage）

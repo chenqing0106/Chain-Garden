@@ -4,6 +4,7 @@ export class AudioAnalyzer implements AudioSource {
   private audioContext: AudioContext | null = null;
   private analyser: AnalyserNode | null = null;
   private source: MediaStreamAudioSourceNode | MediaElementAudioSourceNode | null = null;
+  private gainNode: GainNode | null = null; // Boost input
   private dataArray: Uint8Array | null = null;
   private audioElement: HTMLAudioElement | null = null;
 
@@ -12,12 +13,22 @@ export class AudioAnalyzer implements AudioSource {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      // CRITICAL: Resume context to ensure processing starts
+      await this.audioContext.resume();
+
       this.analyser = this.audioContext.createAnalyser();
       this.source = this.audioContext.createMediaStreamSource(stream);
       
-      this.analyser.fftSize = 512; // Controls resolution
-      this.source.connect(this.analyser);
-      // Note: Mic source is NOT connected to destination to avoid feedback loop
+      // BOOST GAIN: Create a GainNode to amplify quiet mic inputs
+      this.gainNode = this.audioContext.createGain();
+      this.gainNode.gain.value = 5.0; // 5.0x Amplification for hyper-reactivity
+
+      this.analyser.fftSize = 512; 
+      
+      // Connect: Source -> Gain -> Analyser
+      this.source.connect(this.gainNode);
+      this.gainNode.connect(this.analyser);
       
       const bufferLength = this.analyser.frequencyBinCount;
       this.dataArray = new Uint8Array(bufferLength);
@@ -31,8 +42,10 @@ export class AudioAnalyzer implements AudioSource {
     this.cleanup();
     try {
       this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      await this.audioContext.resume();
+      
       this.audioElement = new Audio(URL.createObjectURL(file));
-      this.audioElement.loop = true; // Loop strictly for the garden ambience
+      this.audioElement.loop = true; 
 
       this.source = this.audioContext.createMediaElementSource(this.audioElement);
       this.analyser = this.audioContext.createAnalyser();
@@ -67,7 +80,7 @@ export class AudioAnalyzer implements AudioSource {
       return { bass: 0, mid: 0, treble: 0, raw: new Uint8Array(0) };
     }
 
-    this.analyser.getByteFrequencyData(this.dataArray);
+    this.analyser.getByteFrequencyData(this.dataArray as any);
 
     const bufferLength = this.dataArray.length;
     const third = Math.floor(bufferLength / 3);
@@ -94,11 +107,20 @@ export class AudioAnalyzer implements AudioSource {
       URL.revokeObjectURL(this.audioElement.src);
       this.audioElement = null;
     }
+    if (this.gainNode) {
+        this.gainNode.disconnect();
+        this.gainNode = null;
+    }
+    if (this.source) {
+        this.source.disconnect();
+    }
+    if (this.analyser) {
+        this.analyser.disconnect();
+        this.analyser = null;
+    }
     if (this.audioContext) {
       this.audioContext.close();
       this.audioContext = null;
     }
-    this.source = null;
-    this.analyser = null;
   }
 }

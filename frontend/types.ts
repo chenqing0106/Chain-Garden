@@ -25,6 +25,9 @@ export interface Specimen {
   prompt: string; // User input or "Manual"
   timestamp: number;
   imageData: string; // Base64 of the snapshot
+  audioData?: string; // Base64 of the recorded generative music
+  reflectionAudioData?: string; // Base64 of the user's voice reflection
+  reflectionQuestion?: string; // The specific question answered
   // Blockchain Data
   txHash?: string;
   owner?: string;
@@ -34,4 +37,11 @@ export interface Specimen {
 export interface AudioSource {
   getFrequencyData(): { bass: number; mid: number; treble: number; raw: Uint8Array };
   cleanup?(): void;
+}
+
+export type LabState = 'EMPTY' | 'SYNTHESIZED' | 'GROWING';
+
+export interface BioState {
+  stress: number; // 0.0 to 1.0 (Misalignment / Distortion)
+  energy: number; // 0.0 to 1.0 (Growth Rate / Note Density)
 }

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { X, Zap, Trash2, Share2, Activity, FileText, Hash } from 'lucide-react';
+import { X, Zap, Trash2, Share2, Activity, FileText, Hash, Download, MessageCircle } from 'lucide-react';
 import { Specimen } from '../types';
 
 interface SpecimenDetailModalProps {
@@ -19,6 +19,18 @@ const SpecimenDetailModal: React.FC<SpecimenDetailModalProps> = ({
   walletConnected 
 }) => {
   if (!specimen) return null;
+
+  // Helper to trigger audio download
+  const handleDownloadAudio = () => {
+      if (!specimen.audioData) return;
+      
+      const link = document.createElement('a');
+      link.href = specimen.audioData;
+      link.download = `${specimen.dna.speciesName.replace(/\s+/g, '_')}_${specimen.id}.webm`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+  };
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -58,7 +70,7 @@ const SpecimenDetailModal: React.FC<SpecimenDetailModalProps> = ({
                 </p>
             </div>
 
-            {/* Prompt Section - UPDATED LABEL for clarity */}
+            {/* Prompt Section */}
             <div className="mb-6 bg-riso-yellow/20 border border-riso-black p-4 relative">
                 <div className="absolute -top-3 left-2 bg-riso-paper px-1 text-xs font-bold text-riso-black flex items-center gap-1">
                     <FileText className="w-3 h-3" /> ORIGIN PROMPT (USER INPUT)
@@ -67,6 +79,27 @@ const SpecimenDetailModal: React.FC<SpecimenDetailModalProps> = ({
                     "{specimen.prompt}"
                 </p>
             </div>
+            
+            {/* Reflection Playback */}
+            {specimen.reflectionAudioData && (
+                <div className="mb-6 bg-riso-green/10 border border-riso-green p-4 relative">
+                    <div className="absolute -top-3 left-2 bg-riso-paper px-1 text-xs font-bold text-riso-green flex items-center gap-1">
+                        <MessageCircle className="w-3 h-3" /> VOICE REFLECTION
+                    </div>
+                    {/* Display the Question if available */}
+                    {specimen.reflectionQuestion && (
+                        <p className="font-bold text-xs mb-2 italic">
+                            "{specimen.reflectionQuestion}"
+                        </p>
+                    )}
+                    <div className="mt-2">
+                        <audio controls src={specimen.reflectionAudioData} className="w-full h-8" />
+                    </div>
+                    <p className="text-[10px] text-gray-500 mt-1 italic">
+                        Recorded response to self-exploration query.
+                    </p>
+                </div>
+            )}
 
             {/* DNA Stats */}
             <div className="grid grid-cols-2 gap-4 mb-6 text-xs">
@@ -102,6 +135,17 @@ const SpecimenDetailModal: React.FC<SpecimenDetailModalProps> = ({
             </div>
 
             <div className="mt-auto space-y-3">
+                {/* Audio Download */}
+                {specimen.audioData && (
+                    <button 
+                        onClick={handleDownloadAudio}
+                        className="w-full py-2 bg-riso-pink text-white font-bold border-2 border-black hover:bg-white hover:text-riso-pink transition-all flex items-center justify-center gap-2 mb-2"
+                    >
+                        <Download className="w-4 h-4" />
+                        DOWNLOAD RECORDED AUDIO
+                    </button>
+                )}
+
                 {/* Blockchain Status */}
                 <div className={`p-3 border-2 ${specimen.txHash ? 'border-riso-green bg-green-50' : 'border-gray-300 bg-gray-50'}`}>
                     <div className="flex justify-between items-center">
