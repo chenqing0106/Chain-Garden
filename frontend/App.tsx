@@ -620,7 +620,22 @@ const App: React.FC = () => {
                   ) : (
                       <div className="p-4 bg-gray-100 border-2 border-riso-black text-center space-y-2">
                           <div className="animate-pulse font-bold text-riso-green">SPECIMEN ACTIVE</div>
-                          <div className="text-xs font-mono">{dna.speciesName}</div>
+                          
+                          {/* UPDATED: DNA Stats in GROWING State */}
+                          <div className="text-xs space-y-1 border-t border-b border-black py-2 text-left">
+                              <div className="flex justify-between"><span>SPECIES:</span><span className="font-bold truncate w-24 text-right">{dna.speciesName}</span></div>
+                              <div className="flex justify-between"><span>ARCH:</span><span>{dna.growthArchitecture.replace('_', ' ')}</span></div>
+                              <div className="flex justify-between"><span>MOOD:</span><span className="uppercase text-riso-pink">{dna.mood}</span></div>
+                              <div className="flex justify-between items-center pt-1">
+                                <span>PALETTE:</span>
+                                <div className="flex gap-1">
+                                    {dna.colorPalette.map((c, i) => (
+                                        <div key={i} className="w-4 h-4 border border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]" style={{backgroundColor: c}} title={c}></div>
+                                    ))}
+                                </div>
+                              </div>
+                          </div>
+
                           <button 
                             onClick={handleCompost}
                             className="w-full py-2 border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-bold text-xs flex items-center justify-center gap-2"
