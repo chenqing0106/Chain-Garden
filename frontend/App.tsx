@@ -484,16 +484,13 @@ const App: React.FC = () => {
           if (!selection.dna) {
             console.warn("DNA exclusion not yet supported; proceeding with DNA included.");
           }
-          // // 1. "Upload" Image and Metadata
-          // const uploadResult = await uploadSpecimenToIPFS(mintTargetSpecimen, {
-          //   includeDNA: selection.dna,
-          //   includeAudio: selection.audio,
-          //   includeVoice: selection.voice,
-          // });
-          // 1. "Upload" Image and Metadata
-          // NOTE: 当前 IPFS 服务默认总是上传图片 + DNA。
-          // selection.audio / selection.voice 预留给后续扩展。
-          const uploadResult = await uploadSpecimenToIPFS(mintTargetSpecimen);
+          // 1. "Upload" Image, audio, voice and Metadata
+          const uploadResult = await uploadSpecimenToIPFS(mintTargetSpecimen, {
+            includeDNA: selection.dna,
+            includeAudio: selection.audio,
+            includeVoice: selection.voice,
+          });
+          
           // 2. Mint
           const result = await web3ServiceRef.current.mintNFT(uploadResult.metadata.uri);
           

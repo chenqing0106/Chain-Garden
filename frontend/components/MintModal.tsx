@@ -26,8 +26,8 @@ const MintModal: React.FC<MintModalProps> = ({ isOpen, onClose, specimen, onConf
   const [selection, setSelection] = useState<AssetSelection>({
       image: true,
       dna: true,
-      audio: false,
-      voice: false
+      audio: true,
+      voice: true
   });
 
   useEffect(() => {
