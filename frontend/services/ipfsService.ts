@@ -330,7 +330,7 @@ export const createMetadataFromSpecimen = (
     name: dna.speciesName,
     description: dna.description || 'A unique botanical specimen grown in Chain Garden.',
     image: imageUri,
-    external_url: 'https://chaingarden.xyz', // 可选：项目网站
+    external_url: 'https://chain-garden.vercel.app/', // 可选：项目网站
     attributes, // 可选：dna属性
     background_color,
     generative_audio: generativeAudioLink, // 可选：生成音频

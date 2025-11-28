@@ -77,6 +77,12 @@ ETHERSCAN_API_KEY=your_etherscan_key
 
 # Gemini API Key (前端使用)
 GEMINI_API_KEY=your_gemini_key
+
+# Pinata JWT (IPFS上传)
+# 从以下地址获取：https://www.pinata.cloud/
+VITE_PINATA_JWT=your_Pinata_JWT_Token（必填）
+# VITE_PINATA_API_BASE=https://api.pinata.cloud（可选，代码中已设置）
+# VITE_PINATA_GATEWAY=https://gateway.pinata.cloud/ipfs（可选，代码中已设置）
 ```
 
 ### 编译合约
