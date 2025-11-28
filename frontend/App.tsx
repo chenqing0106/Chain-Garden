@@ -563,7 +563,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen w-full flex flex-col portrait:flex-col landscape:flex-row md:flex-row bg-grain transition-all duration-300 ease-in-out mobile-fallback-container desktop-override">
+    <div className="min-h-screen w-full flex flex-col md:flex-row bg-grain">
       
       {/* MODALS */}
       <MintModal 
@@ -584,7 +584,7 @@ const App: React.FC = () => {
       />
 
       {/* LEFT PANEL: Swappable Interface */}
-      <div className="w-full md:w-1/3 lg:w-1/4 p-4 md:p-6 border-r-2 border-riso-black bg-riso-paper z-10 flex flex-col gap-6 overflow-y-auto h-screen portrait:h-1/2 portrait:w-full landscape:h-full landscape:w-1/2 landscape:md:w-1/3 portrait:max-h-[50vh] landscape:max-h-screen custom-scrollbar transition-all duration-500 mobile-fallback-sidebar">
+      <div className="w-full md:w-1/3 lg:w-1/4 p-6 border-r-2 border-riso-black bg-riso-paper z-10 flex flex-col gap-6 overflow-y-auto h-screen custom-scrollbar transition-all duration-500">
         
         {/* Header */}
         <div className="border-b-4 border-double border-riso-black pb-4">
@@ -603,7 +603,7 @@ const App: React.FC = () => {
         {/* Connect Wallet */}
         <button 
             onClick={connectWallet}
-            className={`w-full py-3 px-3 min-h-[44px] border-2 border-black font-bold text-xs flex items-center justify-between group transition-all
+            className={`w-full py-2 px-3 border-2 border-black font-bold text-xs flex items-center justify-between group transition-all
             ${walletAddress ? 'bg-riso-black text-white' : 'bg-white text-black hover:bg-riso-blue hover:text-white'}`}
         >
             <div className="flex items-center gap-2">
@@ -656,7 +656,7 @@ const App: React.FC = () => {
                 <div className="mt-auto space-y-2">
                     <button 
                         onClick={toggleRecording}
-                        className={`w-full py-4 min-h-[44px] font-bold border-2 border-black flex items-center justify-center gap-2 transition-all
+                        className={`w-full py-4 font-bold border-2 border-black flex items-center justify-center gap-2 transition-all
                         ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'bg-white text-black hover:bg-gray-100'}`}
                     >
                         {isRecording ? <><StopCircle className="w-5 h-5"/> STOP RECORDING</> : <><Disc className="w-5 h-5"/> START RECORDING</>}
@@ -685,7 +685,7 @@ const App: React.FC = () => {
                       <TestTube className="w-5 h-5 text-riso-green" />
                       <h2 className="font-bold text-lg">SYNTHESIS</h2>
                     </div>
-                    <button onClick={() => setIsManualMode(!isManualMode)} className={`p-2 min-w-[44px] min-h-[44px] border border-black ${isManualMode ? 'bg-riso-blue text-white' : 'bg-white'}`}><Sliders className="w-4 h-4" /></button>
+                    <button onClick={() => setIsManualMode(!isManualMode)} className={`p-1 border border-black ${isManualMode ? 'bg-riso-blue text-white' : 'bg-white'}`}><Sliders className="w-4 h-4" /></button>
                   </div>
                   
                   {labState === 'EMPTY' ? (
@@ -695,12 +695,12 @@ const App: React.FC = () => {
                             value={prompt}
                             onChange={(e) => setPrompt(e.target.value)}
                             placeholder="Describe the vibe to synthesize DNA..."
-                            className="w-full h-24 p-3 font-mono text-base md:text-sm bg-gray-50 border-2 border-riso-black focus:outline-none focus:ring-2 focus:ring-riso-blue resize-none"
+                            className="w-full h-24 p-3 font-mono text-sm bg-gray-50 border-2 border-riso-black focus:outline-none focus:ring-2 focus:ring-riso-blue resize-none"
                           />
                           <button 
                             onClick={handleGenerateDNA}
                             disabled={isGenerating || !prompt}
-                            className="w-full py-3 min-h-[44px] bg-riso-black text-white font-bold border-2 border-transparent hover:bg-riso-green hover:border-black hover:text-black flex items-center justify-center gap-2"
+                            className="w-full py-3 bg-riso-black text-white font-bold border-2 border-transparent hover:bg-riso-green hover:border-black hover:text-black flex items-center justify-center gap-2"
                           >
                             {isGenerating ? <RefreshCw className="animate-spin w-4 h-4"/> : <Leaf className="w-4 h-4"/>}
                             {isGenerating ? "SYNTHESIZING..." : "INITIATE GROWTH"}
@@ -709,15 +709,15 @@ const App: React.FC = () => {
                       ) : (
                         <div className="bg-white border-2 border-riso-black p-3 space-y-3 text-xs">
                            <div className="space-y-1">
-                              <div className="font-bold text-xs">ARCHITECTURE</div>
-                              <select value={dna.growthArchitecture} onChange={(e) => handleDnaChange('growthArchitecture', e.target.value)} className="w-full h-12 md:h-10 p-2 border border-black font-mono text-base md:text-sm">{ARCHITECTURES.map(a => <option key={a} value={a}>{a.toUpperCase()}</option>)}</select>
+                              <div className="font-bold">ARCHITECTURE</div>
+                              <select value={dna.growthArchitecture} onChange={(e) => handleDnaChange('growthArchitecture', e.target.value)} className="w-full p-1 border border-black font-mono">{ARCHITECTURES.map(a => <option key={a} value={a}>{a.toUpperCase()}</option>)}</select>
                            </div>
                            <div className="space-y-1">
-                              <div className="font-bold text-xs">MOOD</div>
-                              <select value={dna.mood} onChange={(e) => handleDnaChange('mood', e.target.value)} className="w-full h-12 md:h-10 p-2 border border-black font-mono text-base md:text-sm">{['happy', 'melancholic', 'mysterious', 'aggressive', 'calm'].map(m => <option key={m} value={m}>{m.toUpperCase()}</option>)}</select>
+                              <div className="font-bold">MOOD</div>
+                              <select value={dna.mood} onChange={(e) => handleDnaChange('mood', e.target.value)} className="w-full p-1 border border-black font-mono">{['happy', 'melancholic', 'mysterious', 'aggressive', 'calm'].map(m => <option key={m} value={m}>{m.toUpperCase()}</option>)}</select>
                            </div>
                            <div className="space-y-1">
-                                <div className="font-bold text-xs">PALETTE (STEM/LEAF/ACCENT)</div>
+                                <div className="font-bold">PALETTE (STEM/LEAF/ACCENT)</div>
                                 <div className="flex gap-2">
                                     {dna.colorPalette.map((color, idx) => (
                                         <input 
@@ -725,12 +725,12 @@ const App: React.FC = () => {
                                             type="color" 
                                             value={color} 
                                             onChange={(e) => handleColorChange(idx, e.target.value)}
-                                            className="h-12 md:h-10 flex-1 border border-black p-0 bg-transparent cursor-pointer"
+                                            className="h-8 flex-1 border border-black p-0 bg-transparent cursor-pointer"
                                         />
                                     ))}
                                 </div>
                            </div>
-                           <button onClick={() => setLabState('SYNTHESIZED')} className="w-full py-3 min-h-[44px] bg-riso-blue text-white font-bold hover:bg-riso-black transition-colors">GENERATE SEED</button>
+                           <button onClick={() => setLabState('SYNTHESIZED')} className="w-full py-2 bg-riso-blue text-white font-bold hover:bg-riso-black transition-colors">GENERATE SEED</button>
                         </div>
                       )
                   ) : labState === 'SYNTHESIZED' ? (
@@ -755,10 +755,10 @@ const App: React.FC = () => {
                           </div>
 
                           <div className="flex gap-2">
-                              <button onClick={discardSeed} className="flex-1 py-3 min-h-[44px] border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-bold text-xs flex items-center justify-center">
+                              <button onClick={discardSeed} className="flex-1 py-2 border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-bold text-xs flex items-center justify-center">
                                   <XCircle className="w-4 h-4 mr-1"/> REJECT
                               </button>
-                              <button onClick={confirmGrowth} className="flex-[2] py-3 min-h-[44px] bg-riso-black text-white hover:bg-riso-green font-bold text-xs flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-y-[2px] transition-all">
+                              <button onClick={confirmGrowth} className="flex-[2] py-2 bg-riso-black text-white hover:bg-riso-green font-bold text-xs flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-y-[2px] transition-all">
                                   <PlayCircle className="w-4 h-4 mr-1"/> PLANT SEED
                               </button>
                           </div>
@@ -784,7 +784,7 @@ const App: React.FC = () => {
 
                           <button 
                             onClick={handleCompost}
-                            className="w-full py-3 min-h-[44px] border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-bold text-xs flex items-center justify-center gap-2"
+                            className="w-full py-2 border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-bold text-xs flex items-center justify-center gap-2"
                           >
                               <Trash2 className="w-3 h-3"/> COMPOST (RESET)
                           </button>
@@ -807,10 +807,10 @@ const App: React.FC = () => {
                       <Volume2 className="w-5 h-5 text-riso-blue" />
                       <h2 className="font-bold text-lg underline decoration-wavy decoration-riso-pink">NUTRIENTS</h2>
                     </div>
-                    <div className="flex gap-2 text-[10px] font-bold">
-                      <button onClick={() => handleAudioInputToggle('mic')} className={`px-2 py-2 min-w-[44px] min-h-[44px] border border-black ${inputMode === 'mic' ? 'bg-riso-black text-white' : 'hover:bg-gray-100'}`}>MIC</button>
-                      <button onClick={() => handleAudioInputToggle('file')} className={`px-2 py-2 min-w-[44px] min-h-[44px] border border-black ${inputMode === 'file' ? 'bg-riso-black text-white' : 'hover:bg-gray-100'}`}>FILE</button>
-                      <button onClick={() => handleAudioInputToggle('reflection')} className={`px-2 py-2 min-w-[44px] min-h-[44px] border border-black ${inputMode === 'reflection' ? 'bg-riso-black text-white' : 'hover:bg-gray-100'}`}>VOICE</button>
+                    <div className="flex gap-1 text-[10px] font-bold">
+                      <button onClick={() => handleAudioInputToggle('mic')} className={`px-1 py-1 border border-black ${inputMode === 'mic' ? 'bg-riso-black text-white' : 'hover:bg-gray-100'}`}>MIC</button>
+                      <button onClick={() => handleAudioInputToggle('file')} className={`px-1 py-1 border border-black ${inputMode === 'file' ? 'bg-riso-black text-white' : 'hover:bg-gray-100'}`}>FILE</button>
+                      <button onClick={() => handleAudioInputToggle('reflection')} className={`px-1 py-1 border border-black ${inputMode === 'reflection' ? 'bg-riso-black text-white' : 'hover:bg-gray-100'}`}>VOICE</button>
                     </div>
                   </div>
                   
@@ -820,14 +820,14 @@ const App: React.FC = () => {
                               <MessageCircle className="absolute -top-2 -right-2 bg-white border border-black p-1 w-6 h-6" />
                               <div className="text-[10px] font-bold text-gray-500 mb-1">SELF-EXPLORATION QUERY:</div>
                               <p className="font-mono text-sm font-bold leading-tight">{reflectionQuestion}</p>
-                              <button onClick={cycleQuestion} className="absolute bottom-1 right-1 p-2 min-w-[32px] min-h-[32px] hover:bg-black/10 rounded-full">
+                              <button onClick={cycleQuestion} className="absolute bottom-1 right-1 p-1 hover:bg-black/10 rounded-full">
                                   <RefreshCcw className="w-3 h-3"/>
                               </button>
                           </div>
                           
                           <button 
                              onClick={toggleReflectionRecording}
-                             className={`w-full py-3 px-4 min-h-[44px] font-bold border-2 border-riso-black transition-all flex items-center justify-center gap-2
+                             className={`w-full py-3 px-4 font-bold border-2 border-riso-black transition-all flex items-center justify-center gap-2
                              ${isRecordingReflection ? 'bg-red-500 text-white animate-pulse' : 'bg-white hover:bg-gray-100'}`}
                           >
                              {isRecordingReflection ? <><StopCircle /> STOP RECORDING</> : <><Mic2 /> HOLD TO ANSWER</>}
@@ -838,7 +838,7 @@ const App: React.FC = () => {
                                 <div className="flex-1 text-center text-xs font-bold text-riso-green flex items-center justify-center gap-1 border border-riso-green bg-green-50 p-2">
                                     <Check className="w-3 h-3"/> CAPTURED
                                 </div>
-                                <button onClick={discardReflection} className="px-3 min-w-[44px] min-h-[44px] border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-colors" title="Discard Recording">
+                                <button onClick={discardReflection} className="px-3 border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-colors" title="Discard Recording">
                                     <Trash2 className="w-4 h-4" />
                                 </button>
                              </div>
@@ -854,7 +854,7 @@ const App: React.FC = () => {
                       </div>
                       <button 
                         onClick={() => handleAudioInputToggle('mic')}
-                        className={`w-full py-3 px-4 min-h-[44px] font-bold border-2 border-riso-black transition-all duration-150 flex items-center justify-center gap-2
+                        className={`w-full py-3 px-4 font-bold border-2 border-riso-black transition-all duration-150 flex items-center justify-center gap-2
                           ${inputMode === 'mic' && isListening
                             ? 'bg-riso-pink text-white shadow-none translate-y-1' 
                             : 'bg-riso-yellow hover:bg-yellow-300 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px]'
@@ -869,14 +869,14 @@ const App: React.FC = () => {
                        <div className="flex gap-2">
                          <button 
                             onClick={() => fileInputRef.current?.click()}
-                            className="flex-1 py-3 px-2 min-h-[44px] border-2 border-riso-black bg-white hover:bg-gray-50 font-mono text-xs flex items-center justify-center gap-1"
+                            className="flex-1 py-2 px-2 border-2 border-riso-black bg-white hover:bg-gray-50 font-mono text-xs flex items-center justify-center gap-1"
                          >
                            <Upload className="w-4 h-4"/> {analyzer && isListening ? "REPLACE MP3" : "LOAD MP3"}
                          </button>
                          {isListening && analyzer && (
                            <button 
                              onClick={toggleFilePlayback}
-                             className="min-w-[44px] min-h-[44px] border-2 border-riso-black bg-riso-yellow flex items-center justify-center hover:bg-yellow-300"
+                             className="w-12 border-2 border-riso-black bg-riso-yellow flex items-center justify-center hover:bg-yellow-300"
                            >
                              {isPlayingFile ? <Pause className="w-4 h-4"/> : <Play className="w-4 h-4"/>}
                            </button>
@@ -894,20 +894,20 @@ const App: React.FC = () => {
       </div>
 
       {/* MIDDLE/RIGHT: Canvas Area */}
-      <div className="flex-1 relative bg-riso-paper flex flex-col h-screen portrait:h-1/2 portrait:w-full landscape:h-full landscape:w-1/2 overflow-y-auto portrait:max-h-[50vh] landscape:max-h-screen mobile-fallback-canvas">
+      <div className="flex-1 relative bg-riso-paper flex flex-col h-screen">
         
         {/* Top Controls Toolbar */}
-        <div className="absolute top-2 right-2 md:top-4 md:right-4 z-50 flex gap-2">
+        <div className="absolute top-4 right-4 z-50 flex gap-2">
           
           {/* 1. AUDIO MONITOR TOGGLE (Parallel Output) */}
           <button
               onClick={handleSonify}
               disabled={labState !== 'GROWING'}
-              className={`p-2 md:p-3 min-w-[44px] min-h-[44px] border-2 border-riso-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-none transition-all
+              className={`p-3 border-2 border-riso-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-none transition-all
               ${labState !== 'GROWING' ? 'opacity-50 cursor-not-allowed bg-gray-200' : isSinging ? 'bg-riso-pink text-white animate-pulse' : 'bg-white hover:bg-gray-50'}`}
               title="Toggle Plant Voice (Monitor)"
           >
-              {isSinging ? <Activity className="w-5 h-5 md:w-6 md:h-6 animate-bounce" /> : <Music className="w-5 h-5 md:w-6 md:h-6" />}
+              {isSinging ? <Activity className="w-6 h-6 animate-bounce" /> : <Music className="w-6 h-6" />}
           </button>
 
           {/* 2. SAVE BUTTON */}
@@ -915,11 +915,11 @@ const App: React.FC = () => {
              <button 
                 onClick={triggerSaveProcess}
                 disabled={labState !== 'GROWING'}
-                className={`p-2 md:p-3 min-w-[44px] min-h-[44px] border-2 border-riso-black shadow-[4px_4px_0px_0px_#00a651] hover:translate-y-1 hover:shadow-none transition-all group relative
+                className={`p-3 border-2 border-riso-black shadow-[4px_4px_0px_0px_#00a651] hover:translate-y-1 hover:shadow-none transition-all group relative
                 ${labState !== 'GROWING' ? 'opacity-50 cursor-not-allowed bg-gray-200' : 'bg-white'}`}
                 title="Archive Specimen"
             >
-                <Save className={`w-5 h-5 md:w-6 md:h-6 ${labState === 'GROWING' ? 'text-riso-black group-hover:text-riso-green' : 'text-gray-400'}`} />
+                <Save className={`w-6 h-6 ${labState === 'GROWING' ? 'text-riso-black group-hover:text-riso-green' : 'text-gray-400'}`} />
             </button>
              {lastSavedId && (
                  <div className="absolute top-full mt-2 right-0 bg-riso-green text-white text-xs font-bold px-2 py-1 whitespace-nowrap border border-black animate-bounce z-50">
@@ -931,24 +931,24 @@ const App: React.FC = () => {
            {/* 3. GALLERY BUTTON */}
            <button 
             onClick={() => setShowGallery(!showGallery)}
-            className={`p-2 md:p-3 min-w-[44px] min-h-[44px] border-2 border-riso-black shadow-[4px_4px_0px_0px_#0078bf] hover:translate-y-1 hover:shadow-none transition-all
+            className={`p-3 border-2 border-riso-black shadow-[4px_4px_0px_0px_#0078bf] hover:translate-y-1 hover:shadow-none transition-all
             ${showGallery ? 'bg-riso-blue text-white' : 'bg-white text-riso-black'}`}
             title="View Collection"
           >
-            <Hash className="w-5 h-5 md:w-6 md:h-6" />
+            <Hash className="w-6 h-6" />
           </button>
         </div>
 
         {showGallery ? (
-          <div className="w-full h-full px-4 md:px-8 pb-8 pt-24 overflow-y-auto bg-grain custom-scrollbar">
+          <div className="w-full h-full px-8 pb-8 pt-24 overflow-y-auto bg-grain custom-scrollbar">
              
              <div className="flex flex-wrap justify-between items-end gap-4 mb-8 border-b-2 border-riso-green pb-2 md:pr-36">
                 <div>
-                    <h2 className="text-2xl md:text-3xl font-bold text-riso-black uppercase tracking-tighter">Herbarium Gallery</h2>
+                    <h2 className="text-3xl font-bold text-riso-black uppercase tracking-tighter">Herbarium Gallery</h2>
                     <p className="text-xs font-mono text-gray-500">CLICK SPECIMEN FOR DETAILS & DNA</p>
                 </div>
                 {collection.length > 0 && (
-                    <button onClick={clearCollection} className="flex items-center gap-1 text-red-500 text-xs font-bold hover:underline bg-white px-3 py-2 min-h-[44px] border border-transparent hover:border-red-500 transition-colors">
+                    <button onClick={clearCollection} className="flex items-center gap-1 text-red-500 text-xs font-bold hover:underline bg-white px-2 py-1 border border-transparent hover:border-red-500 transition-colors">
                         <Trash2 className="w-4 h-4" /> BURN ALL
                     </button>
                 )}
@@ -961,7 +961,7 @@ const App: React.FC = () => {
                  <p className="text-xs mt-2">Return to lab to generate and save.</p>
                </div>
              )}
-             <div className="grid grid-cols-1 landscape:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 pb-20">
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 pb-20">
                {collection.map(specimen => (
                  <div 
                     key={specimen.id} 

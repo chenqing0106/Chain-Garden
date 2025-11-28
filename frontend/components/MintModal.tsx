@@ -64,22 +64,22 @@ const MintModal: React.FC<MintModalProps> = ({ isOpen, onClose, specimen, onConf
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 md:p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-riso-paper w-full max-w-md border-4 border-riso-black shadow-[16px_16px_0px_0px_rgba(26,26,26,1)] relative flex flex-col max-h-[95vh] md:max-h-[90vh]">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-riso-paper w-full max-w-md border-4 border-riso-black shadow-[16px_16px_0px_0px_rgba(26,26,26,1)] relative flex flex-col max-h-[90vh]">
         
         {/* Modal Header */}
-        <div className="bg-riso-black text-white p-2 md:p-3 flex justify-between items-center border-b-4 border-white">
+        <div className="bg-riso-black text-white p-3 flex justify-between items-center border-b-4 border-white">
             <div className="flex items-center gap-2">
-                <Cpu className="w-4 h-4 md:w-5 md:h-5" />
-                <h2 className="font-bold font-mono text-sm md:text-lg tracking-widest">MINT_TERMINAL_v1</h2>
+                <Cpu className="w-5 h-5" />
+                <h2 className="font-bold font-mono text-lg tracking-widest">MINT_TERMINAL_v1</h2>
             </div>
-            <button onClick={onClose} className="hover:text-riso-pink transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
-                <X className="w-5 h-5 md:w-6 md:h-6" />
+            <button onClick={onClose} className="hover:text-riso-pink transition-colors">
+                <X className="w-6 h-6" />
             </button>
         </div>
 
         {/* Content */}
-        <div className="p-4 md:p-6 overflow-y-auto font-mono">
+        <div className="p-6 overflow-y-auto font-mono">
             
             {step === 3 ? (
                 <div className="text-center space-y-6 animate-in fade-in zoom-in duration-300">
@@ -94,14 +94,14 @@ const MintModal: React.FC<MintModalProps> = ({ isOpen, onClose, specimen, onConf
                         <span className="block font-bold text-gray-500 mb-1">TRANSACTION HASH:</span>
                         {specimen.txHash || "0x712..."}
                     </div>
-                    <button onClick={onClose} className="w-full py-3 min-h-[44px] bg-riso-black text-white font-bold hover:bg-riso-green border-2 border-transparent hover:border-black transition-all">
+                    <button onClick={onClose} className="w-full py-3 bg-riso-black text-white font-bold hover:bg-riso-green border-2 border-transparent hover:border-black transition-all">
                         RETURN TO LAB
                     </button>
                 </div>
             ) : (
                 <div className="space-y-6">
                     {/* Image Preview */}
-                    <div className="relative w-full aspect-square border-2 border-black p-1 md:p-2 bg-white rotate-1 shadow-md">
+                    <div className="relative w-full aspect-square border-2 border-black p-2 bg-white rotate-1 shadow-md">
                         <img src={specimen.imageData} className="w-full h-full object-cover mix-blend-multiply" />
                         <div className="absolute bottom-2 right-2 bg-white/90 px-2 py-1 text-xs font-bold border border-black">
                             {specimen.dna.speciesName}
@@ -110,16 +110,16 @@ const MintModal: React.FC<MintModalProps> = ({ isOpen, onClose, specimen, onConf
 
                     {/* Step 0: Curate Assets */}
                     {step === 0 && (
-                        <div className="space-y-2 md:space-y-3">
-                            <div className="text-xs md:text-sm font-bold border-b-2 border-black pb-1 mb-2">CURATE ON-CHAIN ASSETS</div>
+                        <div className="space-y-3">
+                            <div className="text-sm font-bold border-b-2 border-black pb-1 mb-2">CURATE ON-CHAIN ASSETS</div>
                             
                             {/* Option 1: Visuals */}
                             <div 
                                 onClick={() => toggleSelection('image')}
-                                className={`flex items-center justify-between p-2 md:p-3 min-h-[60px] border-2 border-black transition-all cursor-not-allowed bg-gray-100`}
+                                className={`flex items-center justify-between p-3 border-2 border-black transition-all cursor-not-allowed bg-gray-100`}
                             >
-                                <div className="flex items-center gap-2 md:gap-3">
-                                    <FileImage className="w-4 h-4 md:w-5 md:h-5 text-riso-blue" />
+                                <div className="flex items-center gap-3">
+                                    <FileImage className="w-5 h-5 text-riso-blue" />
                                     <div>
                                         <div className="text-xs font-bold">VISUAL SPECIMEN</div>
                                         <div className="text-[10px] text-gray-500">High-res PNG (Required)</div>
@@ -131,17 +131,17 @@ const MintModal: React.FC<MintModalProps> = ({ isOpen, onClose, specimen, onConf
                             {/* Option 2: DNA */}
                             <div 
                                 onClick={() => toggleSelection('dna')}
-                                className={`flex items-center justify-between p-2 md:p-3 min-h-[60px] border-2 border-black transition-all cursor-pointer hover:translate-x-1
+                                className={`flex items-center justify-between p-3 border-2 border-black transition-all cursor-pointer hover:translate-x-1
                                 ${selection.dna ? 'bg-riso-yellow/30' : 'bg-white hover:bg-gray-50'}`}
                             >
-                                <div className="flex items-center gap-2 md:gap-3">
-                                    <Dna className="w-4 h-4 md:w-5 md:h-5 text-riso-green" />
+                                <div className="flex items-center gap-3">
+                                    <Dna className="w-5 h-5 text-riso-green" />
                                     <div>
                                         <div className="text-xs font-bold">GENETIC CODE</div>
                                         <div className="text-[10px] text-gray-500">DNA Parameters as Traits</div>
                                     </div>
                                 </div>
-                                <div className={`w-5 h-5 border-2 border-black flex items-center justify-center ${selection.dna ? 'bg-riso-black' : 'bg-white'}`}>
+                                <div className={`w-4 h-4 border-2 border-black flex items-center justify-center ${selection.dna ? 'bg-riso-black' : 'bg-white'}`}>
                                     {selection.dna && <Check className="w-3 h-3 text-white" />}
                                 </div>
                             </div>
@@ -149,18 +149,18 @@ const MintModal: React.FC<MintModalProps> = ({ isOpen, onClose, specimen, onConf
                             {/* Option 3: Music */}
                             <div 
                                 onClick={() => specimen.audioData && toggleSelection('audio')}
-                                className={`flex items-center justify-between p-2 md:p-3 min-h-[60px] border-2 border-black transition-all 
+                                className={`flex items-center justify-between p-3 border-2 border-black transition-all 
                                 ${!specimen.audioData ? 'opacity-50 cursor-not-allowed bg-gray-100' : 'cursor-pointer hover:translate-x-1'}
                                 ${selection.audio ? 'bg-riso-pink/20' : ''}`}
                             >
-                                <div className="flex items-center gap-2 md:gap-3">
-                                    <Music className="w-4 h-4 md:w-5 md:h-5 text-riso-pink" />
+                                <div className="flex items-center gap-3">
+                                    <Music className="w-5 h-5 text-riso-pink" />
                                     <div>
                                         <div className="text-xs font-bold">GENERATIVE MUSIC</div>
                                         <div className="text-[10px] text-gray-500">{specimen.audioData ? "Include Audio (MP3)" : "No recording available"}</div>
                                     </div>
                                 </div>
-                                <div className={`w-5 h-5 border-2 border-black flex items-center justify-center ${selection.audio ? 'bg-riso-black' : 'bg-white'}`}>
+                                <div className={`w-4 h-4 border-2 border-black flex items-center justify-center ${selection.audio ? 'bg-riso-black' : 'bg-white'}`}>
                                     {selection.audio && <Check className="w-3 h-3 text-white" />}
                                 </div>
                             </div>
@@ -168,18 +168,18 @@ const MintModal: React.FC<MintModalProps> = ({ isOpen, onClose, specimen, onConf
                             {/* Option 4: Voice */}
                             <div 
                                 onClick={() => specimen.reflectionAudioData && toggleSelection('voice')}
-                                className={`flex items-center justify-between p-2 md:p-3 min-h-[60px] border-2 border-black transition-all 
+                                className={`flex items-center justify-between p-3 border-2 border-black transition-all 
                                 ${!specimen.reflectionAudioData ? 'opacity-50 cursor-not-allowed bg-gray-100' : 'cursor-pointer hover:translate-x-1'}
                                 ${selection.voice ? 'bg-riso-blue/20' : ''}`}
                             >
-                                <div className="flex items-center gap-2 md:gap-3">
-                                    <MessageCircle className="w-4 h-4 md:w-5 md:h-5 text-riso-blue" />
+                                <div className="flex items-center gap-3">
+                                    <MessageCircle className="w-5 h-5 text-riso-blue" />
                                     <div>
                                         <div className="text-xs font-bold">VOICE REFLECTION</div>
                                         <div className="text-[10px] text-gray-500">{specimen.reflectionAudioData ? "Include Reflection" : "No reflection available"}</div>
                                     </div>
                                 </div>
-                                <div className={`w-5 h-5 border-2 border-black flex items-center justify-center ${selection.voice ? 'bg-riso-black' : 'bg-white'}`}>
+                                <div className={`w-4 h-4 border-2 border-black flex items-center justify-center ${selection.voice ? 'bg-riso-black' : 'bg-white'}`}>
                                     {selection.voice && <Check className="w-3 h-3 text-white" />}
                                 </div>
                             </div>
@@ -192,7 +192,7 @@ const MintModal: React.FC<MintModalProps> = ({ isOpen, onClose, specimen, onConf
                              <button 
                                 onClick={handleMintClick}
                                 disabled={isMinting}
-                                className="w-full py-4 min-h-[44px] bg-riso-pink text-white font-bold text-base md:text-lg border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:translate-x-1 hover:shadow-none transition-all flex items-center justify-center gap-3"
+                                className="w-full py-4 bg-riso-pink text-white font-bold text-lg border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:translate-x-1 hover:shadow-none transition-all flex items-center justify-center gap-3"
                              >
                                 <Database className="w-5 h-5" />
                                 INITIATE MINT
