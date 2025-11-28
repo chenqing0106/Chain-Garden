@@ -77,12 +77,6 @@ ETHERSCAN_API_KEY=your_etherscan_key
 
 # Gemini API Key (前端使用)
 GEMINI_API_KEY=your_gemini_key
-
-# Pinata JWT (IPFS上传)
-# 从以下地址获取：https://www.pinata.cloud/
-VITE_PINATA_JWT=your_Pinata_JWT_Token（必填）
-# VITE_PINATA_API_BASE=https://api.pinata.cloud（可选，代码中已设置）
-# VITE_PINATA_GATEWAY=https://gateway.pinata.cloud/ipfs（可选，代码中已设置）
 ```
 
 ### 编译合约
@@ -162,28 +156,6 @@ MIT License
 ## 🤝 贡献
 
 欢迎提交 Issue 和 Pull Request！
-
-**支持的生长架构**
-
-- **分形树 (Fractal Tree)**: 经典的递归分叉结构，适合表现树状、分支丰富的样式。`growthArchitecture` 值：`fractal_tree`。
-- **有机藤蔓 (Organic Vine)**: 蜿蜒生长的曲线形态，常表现为延伸与盘绕。`growthArchitecture` 值：`organic_vine`。
-- **径向多肉 (Radial)**: 从中心向四周对称扩散的几何美感，适合多肉类或放射状生长。`growthArchitecture` 值：`radial_succulent`。
-- **蕨类 (Fern)**: 自相似的羽状结构，展示自然界的重复与比例。`growthArchitecture` 值：`fern_frond`。
-- **垂柳样 (Weeping Willow)**: 具有下垂、垂坠感的长条生长结构，适合表现柔软挂落的枝条。`growthArchitecture` 值：`weeping_willow`。
-- **异形灌木 (Alien Shrub)**: 更具抽象或科幻感的灌木状结构，支持非常规参数以产生奇异外观。`growthArchitecture` 值：`alien_shrub`。
-- **晶体仙人掌 (Crystal Cactus)**: 具有几何/晶体化分叉的多肉类表现，用于生成角度分明的结构。`growthArchitecture` 值：`crystal_cactus`。
-- **数据花 (Data Blossom)**: 从数值/音频数据直接映射为花瓣或辐射形态的生成式结构，适合可视化数据驱动生长。`growthArchitecture` 值：`data_blossom`。
-
-- **示例可配置 DNA 字段**: 以下字段在 `frontend/types.ts` 的 `PlantDNA` 中定义，可用于微调不同架构的外观与行为：
-	- `branchingFactor`: 分支因子（例如 2–5），控制每次分叉的子分支数量。
-	- `angleVariance`: 角度偏差，用于引入随机或自然的不对称性。
-	- `leafShape`: 叶片形状（例如 `fern`、`round`、`needle`、`abstract`、`heart`、`crystal`）。
-	- `leafArrangement`: 叶序（`alternate`、`opposite`、`whorled`）。
-	- `colorPalette`: 颜色数组（例如 `["#2b7a2b","#6bd36b","#a6f5a6"]`），分别通常映射为茎、主叶色、高光。
-	- `growthSpeed`: 生长/动画速度，亦会影响生成音乐的 BPM。
-	- `energy`: 0.0–1.0 的能量值，影响生长活性与节奏密度。
-
-- **如何查看/修改**: 具体可配置字段与取值定义位于 `frontend/types.ts` 中，渲染与生长逻辑由 `frontend/components/PlantCanvas.tsx` 和相关服务（如 `plantMusicService.ts`）驱动。
 
 ---
 
