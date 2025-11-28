@@ -3,7 +3,7 @@ export interface PlantDNA {
   speciesName: string;
   description: string;
   // Structural Logic
-  growthArchitecture: 'fractal_tree' | 'organic_vine' | 'radial_succulent' | 'fern_frond' | 'weeping_willow' | 'alien_shrub' | 'crystal_cactus';
+  growthArchitecture: 'fractal_tree' | 'organic_vine' | 'radial_succulent' | 'fern_frond' | 'weeping_willow' | 'alien_shrub' | 'crystal_cactus' | 'data_blossom';
   branchingFactor: number; // 2 to 5
   angleVariance: number; // How much angles deviate
   

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import { PlantDNA, AudioSource, LabState, BioState } from '../types';
 
 interface PlantCanvasProps {
@@ -21,6 +21,15 @@ const PlantCanvas: React.FC<PlantCanvasProps> = ({ analyzer, dna, labState, onSn
   const stressRef = useRef<number>(0); 
   const energyRef = useRef<number>(0); 
   const lastVolRef = useRef<number>(0);
+
+  const descriptionWords = useMemo(() => {
+      const base = `${dna.speciesName ?? ''} ${dna.description ?? ''}`;
+      return base
+          .replace(/[\r\n]+/g, ' ')
+          .split(/\s+/)
+          .map(w => w.trim())
+          .filter(Boolean);
+  }, [dna.description, dna.speciesName]);
   
   // ----------------------------------------------------------------------
   // POINTILLIST DRAWING ENGINE (STIPPLING)
@@ -120,6 +129,90 @@ const PlantCanvas: React.FC<PlantCanvasProps> = ({ analyzer, dna, labState, onSn
             ctx.fill();
           }
       }
+  };
+
+  const drawSoftBackground = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+      const gradient = ctx.createRadialGradient(
+          width * 0.3,
+          height * 0.3,
+          20,
+          width * 0.7,
+          height * 0.8,
+          Math.max(width, height)
+      );
+      gradient.addColorStop(0, '#fff9e8');
+      gradient.addColorStop(0.45, '#f6eed8');
+      gradient.addColorStop(1, '#d9d2bd');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.save();
+      ctx.globalAlpha = 0.04;
+      ctx.fillStyle = '#000000';
+      const speckles = 80;
+      for (let i = 0; i < speckles; i++) {
+          const size = Math.random() * 3;
+          ctx.fillRect(Math.random() * width, Math.random() * height, size, size);
+      }
+      ctx.restore();
+  };
+
+  const drawWordStem = (
+      ctx: CanvasRenderingContext2D,
+      x1: number,
+      y1: number,
+      x2: number,
+      y2: number,
+      color: string
+  ) => {
+      const words = descriptionWords.length ? descriptionWords : [dna.speciesName];
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const angle = Math.atan2(dy, dx);
+      const length = Math.hypot(dx, dy);
+      const step = Math.max(24, length / Math.max(words.length, 6));
+      const pulse = 1 + energyRef.current * 0.5;
+
+      for (let dist = 0, idx = 0; dist <= length; dist += step, idx++) {
+          const t = dist / length;
+          const px = x1 + dx * t;
+          const py = y1 + dy * t;
+          const word = words[idx % words.length];
+
+          ctx.save();
+          ctx.translate(px, py);
+          ctx.rotate(angle);
+          const fontSize = 10 + (1 - t) * 12 * pulse;
+          ctx.font = `${fontSize}px "IBM Plex Mono", "Courier New", monospace`;
+          ctx.fillStyle = color;
+          ctx.globalAlpha = 0.8 - t * 0.4;
+          ctx.shadowColor = color;
+          ctx.shadowBlur = 8 * (1 - t);
+          ctx.fillText(word, 0, 0);
+          ctx.restore();
+      }
+  };
+
+  const drawRadialNode = (
+      ctx: CanvasRenderingContext2D,
+      x: number,
+      y: number,
+      radius: number,
+      fill: string,
+      stroke: string
+  ) => {
+      const gradient = ctx.createRadialGradient(x - radius / 3, y - radius / 3, radius * 0.2, x, y, radius);
+      gradient.addColorStop(0, '#ffffff');
+      gradient.addColorStop(1, fill);
+      ctx.beginPath();
+      ctx.fillStyle = gradient;
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = stroke;
+      ctx.globalAlpha = 0.6;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
   };
 
   // ----------------------------------------------------------------------
@@ -243,7 +336,114 @@ const PlantCanvas: React.FC<PlantCanvasProps> = ({ analyzer, dna, labState, onSn
       }
   };
 
-  const drawArchitecture = (ctx: CanvasRenderingContext2D, cx: number, cy: number, by: number) => {
+  const drawDataBlossom = (
+      ctx: CanvasRenderingContext2D,
+      cx: number,
+      cy: number,
+      width: number,
+      height: number
+  ) => {
+      const progress = Math.max(0.18, growthRef.current / 100);
+      const baseRadius = Math.min(width, height) * 0.35 * progress + 80;
+      const spokes = Math.max(18, Math.floor(dna.branchingFactor * 6));
+      const nodeCount = 4 + Math.floor(progress * 10);
+      const colorStem = dna.colorPalette[0];
+      const colorNode = dna.colorPalette[1] ?? '#5fb895';
+      const colorAccent = dna.colorPalette[2] ?? '#f4c095';
+
+      for (let i = 0; i < spokes; i++) {
+          const angle = (Math.PI * 2 * i) / spokes;
+          const sway = Math.sin(timeRef.current * 0.8 + i) * (dna.angleVariance * 0.01 + stressRef.current * 0.2);
+          const rayLength = baseRadius * (0.8 + Math.sin(timeRef.current + i) * 0.12);
+          const ex = cx + Math.cos(angle + sway) * rayLength;
+          const ey = cy + Math.sin(angle + sway) * rayLength;
+
+          drawWordStem(ctx, cx, cy, ex, ey, colorStem);
+
+          ctx.save();
+          ctx.strokeStyle = `${colorStem}40`;
+          ctx.lineWidth = 0.8;
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.lineTo(ex, ey);
+          ctx.stroke();
+          ctx.restore();
+
+          for (let n = 1; n <= nodeCount; n++) {
+              const t = n / (nodeCount + 1);
+              const nx = cx + (ex - cx) * t;
+              const ny = cy + (ey - cy) * t;
+              const radius = 4 + t * 10 + energyRef.current * 6;
+              drawRadialNode(ctx, nx, ny, radius, colorNode, colorAccent);
+          }
+
+          const bloomRadius = 10 + growthRef.current * 0.2;
+          drawRadialNode(ctx, ex, ey, bloomRadius, colorAccent, colorStem);
+      }
+
+      drawRadialNode(ctx, cx, cy, 18 + growthRef.current * 0.2, colorAccent, colorStem);
+
+      const haloWords = Math.min(descriptionWords.length, 48);
+      if (haloWords) {
+          const haloRadius = baseRadius * 0.6;
+          for (let i = 0; i < haloWords; i++) {
+              const word = descriptionWords[i];
+              const angle = (Math.PI * 2 * i) / haloWords + timeRef.current * 0.05;
+              const px = cx + Math.cos(angle) * haloRadius;
+              const py = cy + Math.sin(angle) * haloRadius;
+              ctx.save();
+              ctx.translate(px, py);
+              ctx.rotate(angle + Math.PI / 2);
+              ctx.font = '10px "IBM Plex Mono", "Courier New", monospace';
+              ctx.fillStyle = `${colorStem}aa`;
+              ctx.fillText(word, 0, 0);
+              ctx.restore();
+          }
+      }
+
+      const satelliteClusters = 6;
+      for (let i = 0; i < satelliteClusters; i++) {
+          const angle = (Math.PI * 2 * i) / satelliteClusters + timeRef.current * 0.1;
+          const dist = baseRadius * 1.15 + Math.sin(timeRef.current + i) * 20;
+          const sx = cx + Math.cos(angle) * dist;
+          const sy = cy + Math.sin(angle) * dist;
+          drawRadialNode(ctx, sx, sy, 12 + energyRef.current * 8, colorNode, colorAccent);
+          ctx.save();
+          ctx.strokeStyle = `${colorStem}50`;
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.lineTo(sx, sy);
+          ctx.stroke();
+          ctx.restore();
+
+          const satellites = 5;
+          for (let s = 0; s < satellites; s++) {
+              const theta = angle + (Math.PI * 2 * s) / satellites;
+              const localRadius = 30 + s * 8;
+              const px = sx + Math.cos(theta) * localRadius;
+              const py = sy + Math.sin(theta) * localRadius;
+              drawRadialNode(ctx, px, py, 4 + s * 2, colorAccent, colorStem);
+              ctx.save();
+              ctx.strokeStyle = `${colorAccent}60`;
+              ctx.lineWidth = 0.5;
+              ctx.beginPath();
+              ctx.moveTo(sx, sy);
+              ctx.lineTo(px, py);
+              ctx.stroke();
+              ctx.restore();
+          }
+      }
+  };
+
+  const drawArchitecture = (
+      ctx: CanvasRenderingContext2D,
+      cx: number,
+      cy: number,
+      by: number,
+      width: number,
+      height: number
+  ) => {
       if (dna.growthArchitecture === 'fractal_tree' || dna.growthArchitecture === 'alien_shrub') {
           drawFractal(ctx, cx, by, 80, 0, 1, 14, 6);
       } else if (dna.growthArchitecture === 'organic_vine') {
@@ -258,6 +458,8 @@ const PlantCanvas: React.FC<PlantCanvasProps> = ({ analyzer, dna, labState, onSn
           drawFractal(ctx, cx+40, by, 80, 30, 1, 10, 4);
       } else if (dna.growthArchitecture === 'weeping_willow') {
           drawWillow(ctx, cx, by);
+      } else if (dna.growthArchitecture === 'data_blossom') {
+          drawDataBlossom(ctx, cx, cy, width, height);
       }
   };
 
@@ -291,6 +493,7 @@ const PlantCanvas: React.FC<PlantCanvasProps> = ({ analyzer, dna, labState, onSn
 
     // Clear
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawSoftBackground(ctx, canvas.width, canvas.height);
 
     const cx = canvas.width / 2;
     const cy = canvas.height / 2;
@@ -360,14 +563,14 @@ const PlantCanvas: React.FC<PlantCanvasProps> = ({ analyzer, dna, labState, onSn
     // LAYER A (Cyan/Blue Channel)
     ctx.save();
     ctx.translate(offsetX, offsetY);
-    drawArchitecture(ctx, cx, cy, by);
+    drawArchitecture(ctx, cx, cy, by, canvas.width, canvas.height);
     ctx.restore();
 
     // LAYER B (Pink/Red Channel - Misaligned)
     ctx.save();
     ctx.translate(-offsetX, -offsetY);
     ctx.globalAlpha = 0.7; // Transparency for blending
-    drawArchitecture(ctx, cx, cy, by);
+    drawArchitecture(ctx, cx, cy, by, canvas.width, canvas.height);
     ctx.restore();
 
     ctx.restore();

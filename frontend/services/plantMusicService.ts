@@ -139,6 +139,13 @@ export class PlantMusicService implements AudioSource {
                 voice1: { oscillator: { type: "sine" }, filterEnvelope: { attack: 0.01, decay: 0, sustain: 1, release: 0.5 } }
             } as Partial<Tone.DuoSynthOptions>);
             break;
+        case 'data_blossom':
+            this.synth = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: "sine" },
+                envelope: { attack: 0.3, decay: 0.2, sustain: 0.8, release: 3 },
+                portamento: 0.05
+            } as Partial<Tone.SynthOptions>).toDestination();
+            break;
         default:
             this.synth = new Tone.PolySynth(Tone.Synth).toDestination();
     }

@@ -41,6 +41,7 @@ export const generatePlantDNA = async (vibe: string): Promise<PlantDNA> => {
     - "weeping_willow": Sad, heavy, gravity-bound.
     - "alien_shrub": Glitchy, weird, unexpected.
     - "crystal_cactus": Sharp, defensive, rigid.
+    - "data_blossom": Data-visualization inspired, radial, typographic blooms.
 
     Return strictly JSON matching the schema.`,
     config: {
@@ -50,7 +51,7 @@ export const generatePlantDNA = async (vibe: string): Promise<PlantDNA> => {
         properties: {
           speciesName: { type: Type.STRING },
           description: { type: Type.STRING },
-          growthArchitecture: { type: Type.STRING, enum: ["fractal_tree", "organic_vine", "radial_succulent", "fern_frond", "weeping_willow", "alien_shrub", "crystal_cactus"] },
+          growthArchitecture: { type: Type.STRING, enum: ["fractal_tree", "organic_vine", "radial_succulent", "fern_frond", "weeping_willow", "alien_shrub", "crystal_cactus", "data_blossom"] },
           branchingFactor: { type: Type.NUMBER, description: "0.5 to 0.95" },
           angleVariance: { type: Type.NUMBER, description: "10 to 120. Degrees of spread." },
           colorPalette: { 

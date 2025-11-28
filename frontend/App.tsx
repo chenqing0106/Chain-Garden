@@ -26,7 +26,7 @@ const DEFAULT_DNA: PlantDNA = {
   energy: 0.3
 };
 
-const ARCHITECTURES = ["fractal_tree", "organic_vine", "radial_succulent", "fern_frond", "weeping_willow", "alien_shrub", "crystal_cactus"];
+const ARCHITECTURES = ["fractal_tree", "organic_vine", "radial_succulent", "fern_frond", "weeping_willow", "alien_shrub", "crystal_cactus", "data_blossom"];
 
 const REFLECTION_QUESTIONS = [
     "What are you holding onto that you need to let go of?",
