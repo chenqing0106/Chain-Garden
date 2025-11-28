@@ -19,6 +19,10 @@
             },
             fontFamily: {
               mono: ['Courier Prime', 'Courier New', 'monospace'],
+            },
+            screens: {
+              'portrait': { 'raw': '(orientation: portrait)' },
+              'landscape': { 'raw': '(orientation: landscape)' },
             }
           }
         }
@@ -56,6 +60,46 @@
       }
       ::-webkit-scrollbar-thumb {
         background: #00a651; 
+      }
+
+      /* Orientation Detection Fallback & Error Handling */
+      /* Default to portrait layout for browsers without orientation support */
+      @supports not (orientation: portrait) {
+        /* Fallback: Apply portrait-style layout as default for mobile */
+        @media (max-width: 767px) {
+          .mobile-fallback-container {
+            flex-direction: column !important;
+          }
+          .mobile-fallback-sidebar {
+            height: 50vh !important;
+            width: 100% !important;
+            max-height: 50vh !important;
+          }
+          .mobile-fallback-canvas {
+            height: 50vh !important;
+            width: 100% !important;
+            max-height: 50vh !important;
+          }
+        }
+      }
+
+      /* Ensure desktop breakpoint always overrides orientation styles */
+      @media (min-width: 768px) {
+        .desktop-override {
+          /* Desktop layout takes precedence */
+          flex-direction: row !important;
+        }
+        .desktop-override > .mobile-fallback-sidebar,
+        .desktop-override > .mobile-fallback-canvas {
+          height: 100vh !important;
+          max-height: 100vh !important;
+        }
+      }
+
+      /* Custom scrollbar class for consistent behavior */
+      .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: #00a651 #fcfbf8;
       }
     </style>
   <script type="importmap">

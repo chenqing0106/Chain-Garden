@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orientation Fallback Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            screens: {
+              'portrait': { 'raw': '(orientation: portrait)' },
+              'landscape': { 'raw': '(orientation: landscape)' },
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      /* Orientation Detection Fallback & Error Handling */
+      /* Default to portrait layout for browsers without orientation support */
+      @supports not (orientation: portrait) {
+        /* Fallback: Apply portrait-style layout as default for mobile */
+        @media (max-width: 767px) {
+          .mobile-fallback-container {
+            flex-direction: column !important;
+          }
+          .mobile-fallback-sidebar {
+            height: 50vh !important;
+            width: 100% !important;
+            max-height: 50vh !important;
+          }
+          .mobile-fallback-canvas {
+            height: 50vh !important;
+            width: 100% !important;
+            max-height: 50vh !important;
+          }
+        }
+      }
+
+      /* Ensure desktop breakpoint always overrides orientation styles */
+      @media (min-width: 768px) {
+        .desktop-override {
+          /* Desktop layout takes precedence */
+          flex-direction: row !important;
+        }
+        .desktop-override > .mobile-fallback-sidebar,
+        .desktop-override > .mobile-fallback-canvas {
+          height: 100vh !important;
+          max-height: 100vh !important;
+        }
+      }
+
+      .test-box {
+        border: 2px solid black;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+      }
+    </style>
+</head>
+<body>
+    <div class="p-4">
+        <h1 class="text-2xl font-bold mb-4">Orientation Fallback Test</h1>
+        
+        <div class="mb-4 p-4 bg-gray-100 border border-gray-300">
+            <h2 class="font-bold mb-2">Test Instructions:</h2>
+            <ol class="list-decimal list-inside text-sm space-y-1">
+                <li>Resize browser window to &lt;768px width (mobile)</li>
+                <li>Verify layout stacks vertically (portrait mode)</li>
+                <li>Resize browser window to ≥768px width (desktop)</li>
+                <li>Verify layout switches to horizontal (desktop mode)</li>
+                <li>Test in different browsers to verify fallback behavior</li>
+            </ol>
+        </div>
+
+        <div class="mb-4 p-4 bg-blue-50 border border-blue-300">
+            <h2 class="font-bold mb-2">Current Status:</h2>
+            <p class="text-sm">
+                <strong>Window Width:</strong> <span id="width">-</span>px<br>
+                <strong>Window Height:</strong> <span id="height">-</span>px<br>
+                <strong>Orientation Support:</strong> <span id="orientation-support">-</span><br>
+                <strong>Current Orientation:</strong> <span id="current-orientation">-</span><br>
+                <strong>Expected Layout:</strong> <span id="expected-layout">-</span>
+            </p>
+        </div>
+
+        <!-- Test Layout -->
+        <div class="min-h-screen w-full flex flex-col portrait:flex-col landscape:flex-row md:flex-row transition-all duration-300 mobile-fallback-container desktop-override">
+            
+            <!-- Sidebar -->
+            <div class="w-full md:w-1/3 h-screen portrait:h-1/2 portrait:w-full landscape:h-full landscape:w-1/2 landscape:md:w-1/3 portrait:max-h-[50vh] landscape:max-h-screen mobile-fallback-sidebar test-box bg-green-200">
+                SIDEBAR<br>
+                <span class="text-xs">(Should be top/left)</span>
+            </div>
+
+            <!-- Canvas -->
+            <div class="flex-1 h-screen portrait:h-1/2 portrait:w-full landscape:h-full landscape:w-1/2 portrait:max-h-[50vh] landscape:max-h-screen mobile-fallback-canvas test-box bg-blue-200">
+                CANVAS<br>
+                <span class="text-xs">(Should be bottom/right)</span>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        function updateStatus() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            
+            document.getElementById('width').textContent = width;
+            document.getElementById('height').textContent = height;
+            
+            // Check orientation support
+            const supportsOrientation = CSS.supports('(orientation: portrait)');
+            document.getElementById('orientation-support').textContent = supportsOrientation ? 'YES' : 'NO (Fallback Active)';
+            
+            // Detect current orientation
+            const isPortrait = height > width;
+            const currentOrientation = isPortrait ? 'Portrait' : 'Landscape';
+            document.getElementById('current-orientation').textContent = currentOrientation;
+            
+            // Expected layout
+            let expectedLayout;
+            if (width >= 768) {
+                expectedLayout = 'Desktop (Horizontal Split)';
+            } else if (supportsOrientation) {
+                expectedLayout = isPortrait ? 'Mobile Portrait (Vertical Stack)' : 'Mobile Landscape (Horizontal Split)';
+            } else {
+                expectedLayout = 'Mobile Fallback (Vertical Stack)';
+            }
+            document.getElementById('expected-layout').textContent = expectedLayout;
+        }
+
+        // Update on load and resize
+        updateStatus();
+        window.addEventListener('resize', updateStatus);
+        window.addEventListener('orientationchange', updateStatus);
+    </script>
+</body>
+</html>
