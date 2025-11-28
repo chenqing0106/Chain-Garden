@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Storage Service 测试</title>
+    <style>
+        body {
+            font-family: monospace;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border: 2px solid #000;
+            box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: 2px solid #000;
+            background: #fff;
+            cursor: pointer;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #00a651;
+            color: white;
+        }
+        input {
+            padding: 8px;
+            border: 2px solid #000;
+            font-family: monospace;
+            width: 300px;
+        }
+        .output {
+            background: #111;
+            color: #0f0;
+            padding: 15px;
+            margin: 10px 0;
+            border: 2px solid #000;
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+        .wallet-info {
+            background: #ff48b0;
+            color: white;
+            padding: 10px;
+            margin: 10px 0;
+            border: 2px solid #000;
+        }
+    </style>
+</head>
+<body>
+    <h1>🌱 Chain Garden Storage 测试工具</h1>
+    
+    <div class="section">
+        <h2>1. 钱包模拟</h2>
+        <input type="text" id="walletInput" placeholder="输入钱包地址 (如: 0xabc123...)">
+        <button onclick="setWallet()">设置钱包</button>
+        <button onclick="clearWallet()">断开钱包</button>
+        <div class="wallet-info" id="walletInfo">未连接钱包（匿名模式）</div>
+    </div>
+
+    <div class="section">
+        <h2>2. 创建 Specimen</h2>
+        <input type="text" id="speciesName" placeholder="物种名称" value="Test Plant">
+        <button onclick="createSpecimen()">创建并保存</button>
+    </div>
+
+    <div class="section">
+        <h2>3. 查看 Collection</h2>
+        <button onclick="loadCollection()">刷新 Collection</button>
+        <button onclick="clearCollection()">清空当前钱包的 Collection</button>
+        <div class="output" id="collectionOutput">点击"刷新 Collection"查看数据</div>
+    </div>
+
+    <div class="section">
+        <h2>4. 查看原始存储</h2>
+        <button onclick="viewRawStorage()">查看 localStorage</button>
+        <button onclick="clearAllStorage()">清空所有存储</button>
+        <div class="output" id="storageOutput">点击"查看 localStorage"查看原始数据</div>
+    </div>
+
+    <div class="section">
+        <h2>5. 测试场景</h2>
+        <button onclick="testScenario1()">场景1: 匿名 → 连接钱包</button>
+        <button onclick="testScenario2()">场景2: 切换钱包</button>
+        <button onclick="testScenario3()">场景3: 数据迁移</button>
+    </div>
+
+    <script>
+        let currentWallet = null;
+
+        // 简化版 StorageService（直接操作 localStorage）
+        const STORAGE_PREFIX = 'chainGarden_';
+        const GLOBAL_COLLECTION_KEY = `${STORAGE_PREFIX}global_collection`;
+        const WALLET_MAPPING_KEY = `${STORAGE_PREFIX}wallet_mapping`;
+        const ANONYMOUS_KEY = `${STORAGE_PREFIX}anonymous`;
+
+        function setWallet() {
+            const input = document.getElementById('walletInput').value.trim();
+            if (!input) {
+                alert('请输入钱包地址');
+                return;
+            }
+            currentWallet = input.toLowerCase();
+            updateWalletInfo();
+            loadCollection();
+        }
+
+        function clearWallet() {
+            currentWallet = null;
+            updateWalletInfo();
+            loadCollection();
+        }
+
+        function updateWalletInfo() {
+            const info = document.getElementById('walletInfo');
+            if (currentWallet) {
+                info.textContent = `已连接: ${currentWallet}`;
+                info.style.background = '#00a651';
+            } else {
+                info.textContent = '未连接钱包（匿名模式）';
+                info.style.background = '#ff48b0';
+            }
+        }
+
+        function createSpecimen() {
+            const name = document.getElementById('speciesName').value || 'Test Plant';
+            
+            const specimen = {
+                id: 'spec_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                dna: {
+                    speciesName: name,
+                    mood: 'happy',
+                    growthArchitecture: 'fractal_tree',
+                    colorPalette: ['#1a1a1a', '#0078bf', '#ff48b0']
+                },
+                prompt: 'Test prompt',
+                timestamp: Date.now(),
+                imageData: 'data:image/png;base64,test'
+            };
+
+            // 保存到全局集合
+            const global = JSON.parse(localStorage.getItem(GLOBAL_COLLECTION_KEY) || '[]');
+            global.unshift(specimen);
+            localStorage.setItem(GLOBAL_COLLECTION_KEY, JSON.stringify(global));
+
+            // 关联到钱包或匿名
+            if (currentWallet) {
+                const mapping = JSON.parse(localStorage.getItem(WALLET_MAPPING_KEY) || '{}');
+                if (!mapping[currentWallet]) mapping[currentWallet] = [];
+                mapping[currentWallet].unshift(specimen.id);
+                localStorage.setItem(WALLET_MAPPING_KEY, JSON.stringify(mapping));
+            } else {
+                const anon = JSON.parse(localStorage.getItem(ANONYMOUS_KEY) || '[]');
+                anon.unshift(specimen.id);
+                localStorage.setItem(ANONYMOUS_KEY, JSON.stringify(anon));
+            }
+
+            alert(`创建成功: ${name}`);
+            loadCollection();
+        }
+
+        function loadCollection() {
+            const global = JSON.parse(localStorage.getItem(GLOBAL_COLLECTION_KEY) || '[]');
+            let specimenIds = [];
+
+            if (currentWallet) {
+                const mapping = JSON.parse(localStorage.getItem(WALLET_MAPPING_KEY) || '{}');
+                specimenIds = mapping[currentWallet] || [];
+            } else {
+                specimenIds = JSON.parse(localStorage.getItem(ANONYMOUS_KEY) || '[]');
+            }
+
+            const collection = global.filter(s => specimenIds.includes(s.id));
+            
+            const output = document.getElementById('collectionOutput');
+            if (collection.length === 0) {
+                output.textContent = '当前 collection 为空';
+            } else {
+                output.textContent = `找到 ${collection.length} 个 specimens:\n\n` +
+                    collection.map((s, i) => 
+                        `${i + 1}. ${s.dna.speciesName} (ID: ${s.id})\n   创建时间: ${new Date(s.timestamp).toLocaleString()}`
+                    ).join('\n\n');
+            }
+        }
+
+        function clearCollection() {
+            if (!confirm('确定清空当前钱包的 collection？')) return;
+
+            const global = JSON.parse(localStorage.getItem(GLOBAL_COLLECTION_KEY) || '[]');
+            let specimenIds = [];
+
+            if (currentWallet) {
+                const mapping = JSON.parse(localStorage.getItem(WALLET_MAPPING_KEY) || '{}');
+                specimenIds = mapping[currentWallet] || [];
+                delete mapping[currentWallet];
+                localStorage.setItem(WALLET_MAPPING_KEY, JSON.stringify(mapping));
+            } else {
+                specimenIds = JSON.parse(localStorage.getItem(ANONYMOUS_KEY) || '[]');
+                localStorage.removeItem(ANONYMOUS_KEY);
+            }
+
+            // 从全局集合中删除
+            const updated = global.filter(s => !specimenIds.includes(s.id));
+            localStorage.setItem(GLOBAL_COLLECTION_KEY, JSON.stringify(updated));
+
+            loadCollection();
+        }
+
+        function viewRawStorage() {
+            const output = document.getElementById('storageOutput');
+            const keys = Object.keys(localStorage).filter(k => k.startsWith(STORAGE_PREFIX));
+            
+            if (keys.length === 0) {
+                output.textContent = '没有 Chain Garden 相关数据';
+                return;
+            }
+
+            output.textContent = keys.map(key => {
+                const value = localStorage.getItem(key);
+                const parsed = JSON.parse(value);
+                return `${key}:\n${JSON.stringify(parsed, null, 2)}`;
+            }).join('\n\n' + '='.repeat(50) + '\n\n');
+        }
+
+        function clearAllStorage() {
+            if (!confirm('确定清空所有 Chain Garden 数据？')) return;
+            
+            Object.keys(localStorage)
+                .filter(k => k.startsWith(STORAGE_PREFIX))
+                .forEach(k => localStorage.removeItem(k));
+            
+            alert('已清空所有数据');
+            loadCollection();
+            viewRawStorage();
+        }
+
+        // 测试场景
+        function testScenario1() {
+            alert('场景1: 匿名创建 → 连接钱包\n\n步骤:\n1. 确保未连接钱包\n2. 创建几个 specimens\n3. 连接钱包\n4. 查看 collection（应该看到之前创建的）');
+        }
+
+        function testScenario2() {
+            alert('场景2: 切换钱包\n\n步骤:\n1. 连接钱包 A (如: 0xaaa)\n2. 创建几个 specimens\n3. 切换到钱包 B (如: 0xbbb)\n4. 查看 collection（应该为空）\n5. 创建新 specimens\n6. 切换回钱包 A\n7. 查看 collection（应该看到之前的）');
+        }
+
+        function testScenario3() {
+            alert('场景3: 数据迁移\n\n步骤:\n1. 手动在 localStorage 创建旧格式数据\n2. 刷新页面\n3. 应该自动迁移到新格式');
+            
+            // 创建旧格式数据
+            const oldData = [
+                {
+                    id: 'old_1',
+                    dna: { speciesName: 'Old Plant 1', mood: 'calm' },
+                    timestamp: Date.now()
+                },
+                {
+                    id: 'old_2',
+                    dna: { speciesName: 'Old Plant 2', mood: 'happy' },
+                    timestamp: Date.now()
+                }
+            ];
+            localStorage.setItem('chainGarden_collection', JSON.stringify(oldData));
+            alert('已创建旧格式数据，请刷新页面测试迁移');
+        }
+
+        // 初始化
+        updateWalletInfo();
+    </script>
+</body>
+</html>

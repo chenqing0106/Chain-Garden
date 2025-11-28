@@ -731,12 +731,19 @@ const CONTRACT_ADDRESS = "0xb02bedc80a8c49a97a0c9abf962dc7fcb60eb7ec";
 export class Web3Service {
   private provider: BrowserProvider | null = null;
   private signer: any = null;
+  private pendingRequest: Promise<string> | null = null;
 
   constructor() {
       // Don't initialize provider here.
   }
 
   async connectWallet(silent: boolean = false): Promise<string> {
+    // If there's already a pending request, return it
+    if (this.pendingRequest) {
+      console.log("Wallet connection already in progress, waiting...");
+      return this.pendingRequest;
+    }
+
     // Dynamically check for ethereum on every connect attempt
     const eth = (window as any).ethereum;
 
@@ -749,14 +756,43 @@ export class Web3Service {
     // Always instantiate a fresh provider to avoid stale states
     this.provider = new BrowserProvider(eth);
 
-    try {
-      const accounts = await this.provider.send("eth_requestAccounts", []);
-      this.signer = await this.provider.getSigner();
-      return accounts[0];
-    } catch (error) {
-      console.error("Connection error:", error);
-      throw error;
-    }
+    // Create the connection promise
+    this.pendingRequest = (async () => {
+      try {
+        // First try to get existing accounts (doesn't trigger popup)
+        let accounts = await this.provider!.send("eth_accounts", []);
+        
+        // If no accounts and not silent, request accounts (triggers popup)
+        if (accounts.length === 0 && !silent) {
+          try {
+            accounts = await this.provider!.send("eth_requestAccounts", []);
+          } catch (error: any) {
+            // Handle specific error codes
+            if (error.code === -32002) {
+              // Request already pending - wait and retry
+              console.warn("Connection request already pending, please check MetaMask");
+              throw new Error("Please check MetaMask - there's already a pending connection request");
+            }
+            throw error;
+          }
+        }
+        
+        if (accounts.length > 0) {
+          this.signer = await this.provider!.getSigner();
+          return accounts[0];
+        }
+        
+        return "";
+      } catch (error) {
+        console.error("Connection error:", error);
+        throw error;
+      } finally {
+        // Clear pending request after completion
+        this.pendingRequest = null;
+      }
+    })();
+
+    return this.pendingRequest;
   }
 
   async getNetwork(): Promise<string> {

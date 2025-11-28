@@ -5,6 +5,7 @@ import { AudioAnalyzer } from './services/audioService';
 import { PlantMusicService } from './services/plantMusicService';
 import { generatePlantDNA } from './services/geminiService';
 import { Web3Service } from './services/web3Service';
+import { StorageService } from './services/storageService';
 import PlantCanvas from './components/PlantCanvas';
 import MintModal, { AssetSelection } from './components/MintModal';
 import SpecimenDetailModal from './components/SpecimenDetailModal';
@@ -75,16 +76,8 @@ const App: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isManualMode, setIsManualMode] = useState(false);
   
-  // Initialize collection from LocalStorage
-  const [collection, setCollection] = useState<Specimen[]>(() => {
-      try {
-          const saved = localStorage.getItem('chainGarden_collection');
-          return saved ? JSON.parse(saved) : [];
-      } catch (e) {
-          console.error("Failed to load collection", e);
-          return [];
-      }
-  });
+  // Initialize collection - will be loaded after wallet check
+  const [collection, setCollection] = useState<Specimen[]>([]);
 
   const [triggerSnapshot, setTriggerSnapshot] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
@@ -101,30 +94,38 @@ const App: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Initial check for wallet
+  // Initial check for wallet and load collection
   useEffect(() => {
       const initWeb3 = async () => {
           try {
              // Silent connect attempt
              const addr = await web3ServiceRef.current.connectWallet(true); 
-             if(addr) setWalletAddress(addr);
+             if(addr) {
+                 setWalletAddress(addr);
+                 // Migrate old storage if exists
+                 StorageService.migrateOldStorage(addr);
+                 // Load wallet-specific collection
+                 const walletCollection = StorageService.getWalletCollection(addr);
+                 setCollection(walletCollection);
+             } else {
+                 // No wallet connected, load anonymous collection
+                 StorageService.migrateOldStorage(null);
+                 const anonCollection = StorageService.getWalletCollection(null);
+                 setCollection(anonCollection);
+             }
           } catch (e) {
-              // Silent fail if not connected
+              // Silent fail if not connected, load anonymous collection
+              StorageService.migrateOldStorage(null);
+              const anonCollection = StorageService.getWalletCollection(null);
+              setCollection(anonCollection);
           }
       };
       // setTimeout to allow window.ethereum to inject
       setTimeout(initWeb3, 500);
   }, []);
 
-  // Persist collection updates
-  useEffect(() => {
-      try {
-        localStorage.setItem('chainGarden_collection', JSON.stringify(collection));
-      } catch (e) {
-          console.error("Storage limit exceeded, cannot save new specimen.", e);
-          alert("Storage limit reached! Please delete some specimens to save more.");
-      }
-  }, [collection]);
+  // Note: Collection persistence is now handled by StorageService
+  // No need for a separate useEffect to sync localStorage
 
   // Visualizer Loop
   useEffect(() => {
@@ -181,17 +182,46 @@ const App: React.FC = () => {
   const connectWallet = async () => {
       try {
           const addr = await web3ServiceRef.current.connectWallet(false);
+          
+          if (!addr) {
+              console.log("No wallet address returned");
+              return;
+          }
+          
           setWalletAddress(addr);
           await web3ServiceRef.current.switchNetworkToSepolia();
+          
+          // Transfer anonymous specimens to wallet
+          StorageService.transferAnonymousToWallet(addr);
+          
+          // Reload collection with wallet data
+          const walletCollection = StorageService.getWalletCollection(addr);
+          setCollection(walletCollection);
       } catch (e: any) {
           console.error("Wallet connection error:", e);
-          if (e.code === 4001) return;
+          
+          // User rejected the request
+          if (e.code === 4001) {
+              console.log("User rejected wallet connection");
+              return;
+          }
+          
+          // Request already pending
+          if (e.code === -32002) {
+              alert("请检查 MetaMask - 已有待处理的连接请求。\n\n请在 MetaMask 弹窗中完成操作，或关闭弹窗后重试。");
+              return;
+          }
+          
           const msg = e.message || "";
+          
+          // MetaMask not installed
           if (msg.includes("MetaMask not found") || msg.includes("extension") || msg.includes("install")) {
-              const install = confirm("MetaMask Wallet not detected. Click OK to download.");
+              const install = confirm("未检测到 MetaMask 钱包。点击确定下载安装。");
               if (install) window.open("https://metamask.io/download/", "_blank");
-          } else {
-              alert("Connection failed: " + msg);
+          } 
+          // Other errors
+          else {
+              alert("连接失败: " + msg);
           }
       }
   };
@@ -443,9 +473,16 @@ const App: React.FC = () => {
       reflectionQuestion: reflectionBlob ? reflectionQuestion : undefined // Save question only if audio exists
     };
 
-    setCollection(prev => [newSpecimen, ...prev]);
-    setLastSavedId(newSpecimen.id);
-    setTimeout(() => setLastSavedId(null), 3000);
+    try {
+      StorageService.saveSpecimen(newSpecimen, walletAddress);
+      const updatedCollection = StorageService.getWalletCollection(walletAddress);
+      setCollection(updatedCollection);
+      setLastSavedId(newSpecimen.id);
+      setTimeout(() => setLastSavedId(null), 3000);
+    } catch (e: any) {
+      alert(e.message || "Failed to save specimen");
+      return;
+    }
     
     setLabState('EMPTY');
     resetAllAudio();
@@ -500,7 +537,9 @@ const App: React.FC = () => {
               tokenId: result.tokenId,
               owner: walletAddress
           };
-          setCollection(prev => prev.map(item => item.id === updatedSpecimen.id ? updatedSpecimen : item));
+          StorageService.updateSpecimen(updatedSpecimen);
+          const updatedCollection = StorageService.getWalletCollection(walletAddress);
+          setCollection(updatedCollection);
           setMintTargetSpecimen(updatedSpecimen); 
       } catch (e) {
           console.error(e);
@@ -511,13 +550,15 @@ const App: React.FC = () => {
   };
 
   const deleteSpecimen = (id: string) => {
-      setCollection(prev => prev.filter(s => s.id !== id));
+      StorageService.deleteSpecimen(id, walletAddress);
+      const updatedCollection = StorageService.getWalletCollection(walletAddress);
+      setCollection(updatedCollection);
   }
 
   const clearCollection = () => {
-      if(confirm("Burn entire local collection?")) {
+      if(confirm("Burn entire collection for this wallet?")) {
+          StorageService.clearWalletCollection(walletAddress);
           setCollection([]);
-          localStorage.removeItem('chainGarden_collection');
       }
   }
 

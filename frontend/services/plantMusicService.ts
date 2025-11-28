@@ -206,25 +206,36 @@ export class PlantMusicService implements AudioSource {
           if (!this.synth || this.synth.disposed || !this.bassSynth || this.bassSynth.disposed) return;
 
           const r = Math.random();
-          const bassThreshold = 0.3 + (this.bioState.stress * 0.4);
-          if (r < bassThreshold) {
+          const bassThreshold = 0.15 + (this.bioState.stress * 0.2);
+          const cappedBassThreshold = Math.min(bassThreshold, 0.35);
+          if (r < cappedBassThreshold) {
              const bassNote = scale[0].replace('4', '2').replace('3', '1'); 
              this.bassSynth.triggerAttackRelease(bassNote, "8n", time);
           }
 
-          const density = 0.4 + (dna.energy * 0.3) + (this.bioState.energy * 0.4);
-          if (r < density) {
+          const density = 0.2 + (dna.energy * 0.15) + (this.bioState.energy * 0.2);
+          const cappedDensity = Math.min(density, 0.6);
+          if (r < cappedDensity) {
               const note = scale[Math.floor(Math.random() * scale.length)];
-              const duration = this.bioState.stress > 0.5 ? "16n" : (Math.random() > 0.7 ? "8n" : "4n");
+              const duration = this.bioState.stress > 0.7 ? "8n" : (Math.random() > 0.5 ? "4n" : "8n");
               
-              if (Math.random() > 0.8) {
-                  const chord = [note, scale[(SCALES.happy.indexOf(note) + 2) % 7], scale[(SCALES.happy.indexOf(note) + 4) % 7]]; 
-                  (this.synth as any).triggerAttackRelease(chord, duration, time);
+              if (Math.random() > 0.85) {
+                  const noteIndex = scale.indexOf(note);
+                  if (noteIndex !== -1) {
+                      const chord = [
+                          note, 
+                          scale[(noteIndex + 2) % scale.length], 
+                          scale[(noteIndex + 4) % scale.length]
+                      ];
+                      (this.synth as any).triggerAttackRelease(chord, duration, time);
+                  } else {
+                      (this.synth as any).triggerAttackRelease(note, duration, time);
+                  }
               } else {
                   (this.synth as any).triggerAttackRelease(note, duration, time);
               }
           }
-      }, "8n").start(0);
+      }, "4n").start(0);
   }
 
   getFrequencyData() {
