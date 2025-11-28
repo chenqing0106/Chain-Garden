@@ -22,6 +22,9 @@ const PlantCanvas: React.FC<PlantCanvasProps> = ({ analyzer, dna, labState, onSn
   const energyRef = useRef<number>(0); 
   const lastVolRef = useRef<number>(0);
 
+  // Mouse/Cursor State
+  const mouseRef = useRef<{ x: number; y: number; active: boolean }>({ x: 0, y: 0, active: false });
+
   const descriptionWords = useMemo(() => {
       const base = `${dna.speciesName ?? ''} ${dna.description ?? ''}`;
       return base
@@ -35,124 +38,210 @@ const PlantCanvas: React.FC<PlantCanvasProps> = ({ analyzer, dna, labState, onSn
   // POINTILLIST DRAWING ENGINE (STIPPLING)
   // ----------------------------------------------------------------------
   
-  // Draws a line made of organic dots instead of a solid stroke
+  // 抽象艺术风格：使用画笔质感的线条，带有纹理和点状效果
   const drawStippledLine = (ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number, width: number, color: string) => {
       const dist = Math.hypot(x2 - x1, y2 - y1);
-      // DENSITY UPGRADE: 1.5 dots per pixel for solid ink bleed effect (Concrete Poetry style)
-      const steps = Math.max(10, dist * 1.5); 
+      const steps = Math.max(12, dist * 1.2); 
       
-      // Reactivity: Dot size pulses with Energy (Breathing)
-      const pulse = 1 + (energyRef.current * 1.5);
-      // Reactivity: High stress causes dots to scatter (disintegrate)
-      const scatter = stressRef.current * 5; 
-
-      ctx.fillStyle = color;
+      // 增强光标影响：计算到鼠标的距离
+      const mouseInfluence = mouseRef.current.active ? 
+          Math.max(0, 1 - Math.hypot((x1 + x2) / 2 - mouseRef.current.x, (y1 + y2) / 2 - mouseRef.current.y) / 150) : 0;
       
-      for (let i = 0; i <= steps; i++) {
-          const t = i / steps;
-          
-          // Organic Jitter (Ink spread)
-          const jitterX = (Math.random() - 0.5) * (0.5 + scatter);
-          const jitterY = (Math.random() - 0.5) * (0.5 + scatter);
-          
-          const px = x1 + (x2 - x1) * t + jitterX;
-          const py = y1 + (y2 - y1) * t + jitterY;
-          
-          // Tapering width
-          const currentWidth = width * (1 - t * 0.6); 
-          
-          // Breathing dots: Size varies with volume/energy
-          // Base size + Pulse + Random Noise
-          const size = Math.max(0.6, currentWidth * pulse * (0.5 + Math.random() * 0.5));
-          
-          ctx.beginPath();
-          ctx.arc(px, py, size, 0, Math.PI * 2);
-          ctx.fill();
+      const pulse = 1 + (energyRef.current * 0.6) + (mouseInfluence * 0.5);
+      const scatter = stressRef.current * 2 + (mouseInfluence * 4);
+      
+      // 光标吸引：线条向鼠标方向轻微弯曲（限制影响范围）
+      let adjustedX2 = x2;
+      let adjustedY2 = y2;
+      if (mouseInfluence > 0.2) {
+          const dx = mouseRef.current.x - (x1 + x2) / 2;
+          const dy = mouseRef.current.y - (y1 + y2) / 2;
+          // 限制吸引强度，避免植物被拉出视野
+          const attractStrength = mouseInfluence * 0.15;
+          adjustedX2 = x2 + dx * attractStrength;
+          adjustedY2 = y2 + dy * attractStrength;
       }
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width * pulse;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      
+      // 画笔质感：变化的透明度和纹理
+      ctx.globalAlpha = 0.75 + (mouseInfluence * 0.25);
+      
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      
+      for (let i = 1; i <= steps; i++) {
+          const t = i / steps;
+          const jitterX = (Math.random() - 0.5) * scatter * (1 - t * 0.4);
+          const jitterY = (Math.random() - 0.5) * scatter * (1 - t * 0.4);
+          
+          const px = x1 + (adjustedX2 - x1) * t + jitterX;
+          const py = y1 + (adjustedY2 - y1) * t + jitterY;
+          
+          ctx.lineTo(px, py);
+      }
+      
+      ctx.stroke();
+      
+      // 添加点状纹理效果
+      if (width > 2) {
+          ctx.globalAlpha = 0.4 + (mouseInfluence * 0.3);
+          for (let i = 0; i <= steps; i += 3) {
+              const t = i / steps;
+              const px = x1 + (adjustedX2 - x1) * t;
+              const py = y1 + (adjustedY2 - y1) * t;
+              ctx.beginPath();
+              ctx.arc(px, py, width * 0.3, 0, Math.PI * 2);
+              ctx.fill();
+          }
+      }
+      
+      ctx.globalAlpha = 1;
   };
 
-  // Draws a quadratic curve using dots
+  // 抽象艺术风格：使用画笔质感的曲线，带有纹理效果
   const drawStippledCurve = (ctx: CanvasRenderingContext2D, x1: number, y1: number, cpX: number, cpY: number, x2: number, y2: number, width: number, color: string) => {
       const distEstimate = Math.hypot(x2-x1, y2-y1);
-      // High resolution for smooth organic curves
-      const steps = Math.max(100, distEstimate * 2); 
+      const steps = Math.max(60, distEstimate * 1.5); 
       
-      const pulse = 1 + (energyRef.current * 1.5);
-      const scatter = stressRef.current * 3;
-
-      ctx.fillStyle = color;
-
-      for (let i = 0; i <= steps; i++) {
-          const t = i / steps;
-          // Quadratic Bezier Formula
-          const invT = 1 - t;
-          const px = (invT * invT * x1) + (2 * invT * t * cpX) + (t * t * x2);
-          const py = (invT * invT * y1) + (2 * invT * t * cpY) + (t * t * y2);
-
-          const jitter = (Math.random() - 0.5) * scatter;
-          const currentWidth = width * (1 - t * 0.5);
-          const size = Math.max(0.6, currentWidth * pulse * (0.5 + Math.random() * 0.5));
-
-          ctx.beginPath();
-          ctx.arc(px + jitter, py + jitter, size, 0, Math.PI * 2);
-          ctx.fill();
+      // 增强光标影响
+      const mouseInfluence = mouseRef.current.active ? 
+          Math.max(0, 1 - Math.hypot(cpX - mouseRef.current.x, cpY - mouseRef.current.y) / 150) : 0;
+      
+      const pulse = 1 + (energyRef.current * 0.6) + (mouseInfluence * 0.5);
+      const scatter = stressRef.current * 1.5 + (mouseInfluence * 3);
+      
+      // 光标吸引：控制点向鼠标方向轻微移动（限制影响范围）
+      let adjustedCpX = cpX;
+      let adjustedCpY = cpY;
+      if (mouseInfluence > 0.2) {
+          const dx = mouseRef.current.x - cpX;
+          const dy = mouseRef.current.y - cpY;
+          // 限制吸引强度，避免植物被拉出视野
+          const attractStrength = mouseInfluence * 0.2;
+          adjustedCpX = cpX + dx * attractStrength;
+          adjustedCpY = cpY + dy * attractStrength;
       }
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width * pulse;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.globalAlpha = 0.75 + (mouseInfluence * 0.25);
+
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      
+      for (let i = 1; i <= steps; i++) {
+          const t = i / steps;
+          const invT = 1 - t;
+          const px = (invT * invT * x1) + (2 * invT * t * adjustedCpX) + (t * t * x2);
+          const py = (invT * invT * y1) + (2 * invT * t * adjustedCpY) + (t * t * y2);
+          
+          const jitterX = (Math.random() - 0.5) * scatter * (1 - t * 0.3);
+          const jitterY = (Math.random() - 0.5) * scatter * (1 - t * 0.3);
+          
+          ctx.lineTo(px + jitterX, py + jitterY);
+      }
+      
+      ctx.stroke();
+      
+      // 添加点状纹理效果
+      if (width > 2) {
+          ctx.globalAlpha = 0.4 + (mouseInfluence * 0.3);
+          for (let i = 0; i <= steps; i += 4) {
+              const t = i / steps;
+              const invT = 1 - t;
+              const px = (invT * invT * x1) + (2 * invT * t * adjustedCpX) + (t * t * x2);
+              const py = (invT * invT * y1) + (2 * invT * t * adjustedCpY) + (t * t * y2);
+              ctx.beginPath();
+              ctx.arc(px, py, width * 0.3, 0, Math.PI * 2);
+              ctx.fill();
+          }
+      }
+      
+      ctx.globalAlpha = 1;
   };
 
-  // Draws a "Cellular" cluster (for fruits/succulents)
+  // 抽象艺术风格：使用点状纹理的簇，带有画笔质感
   const drawCellularCluster = (ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, color: string, outlineColor: string) => {
-      // Cell density proportional to area
       const cells = 8 + Math.floor(radius * 1.5); 
-      const pulse = 1 + (energyRef.current * 0.4);
+      
+      // 增强光标影响：吸引和排斥效果
+      const mouseInfluence = mouseRef.current.active ? 
+          Math.max(0, 1 - Math.hypot(x - mouseRef.current.x, y - mouseRef.current.y) / 120) : 0;
+      
+      const pulse = 1 + (energyRef.current * 0.4) + (mouseInfluence * 0.6);
+      
+      // 光标吸引：簇向鼠标方向轻微移动（限制影响范围）
+      let adjustedX = x;
+      let adjustedY = y;
+      if (mouseInfluence > 0.2) {
+          const dx = mouseRef.current.x - x;
+          const dy = mouseRef.current.y - y;
+          // 限制吸引强度，避免植物被拉出视野
+          const attractStrength = mouseInfluence * 0.15;
+          adjustedX = x + dx * attractStrength;
+          adjustedY = y + dy * attractStrength;
+      }
+
+      ctx.fillStyle = color;
+      ctx.globalAlpha = 0.65 + (mouseInfluence * 0.35);
 
       for(let i=0; i<cells; i++) {
-          // Random point inside circle (Cell packing)
           const r = radius * Math.sqrt(Math.random()) * pulse;
           const theta = Math.random() * 2 * Math.PI;
           
-          // Add wind sway to individual cells
-          const cx = x + r * Math.cos(theta) + (windRef.current * 5);
-          const cy = y + r * Math.sin(theta);
+          // 增强光标影响：点状元素对鼠标更敏感
+          const cellMouseInfluence = mouseRef.current.active ? 
+              Math.max(0, 1 - Math.hypot(adjustedX + r * Math.cos(theta) - mouseRef.current.x, 
+                                        adjustedY + r * Math.sin(theta) - mouseRef.current.y) / 100) : 0;
           
-          const size = (Math.random() * 3 + 1.5) * pulse;
-
+          const cx = adjustedX + r * Math.cos(theta) + (windRef.current * 3) + 
+                     (mouseInfluence * 15 * (Math.random() - 0.5)) + 
+                     (cellMouseInfluence * 8 * (Math.random() - 0.5));
+          const cy = adjustedY + r * Math.sin(theta) + 
+                     (mouseInfluence * 15 * (Math.random() - 0.5)) + 
+                     (cellMouseInfluence * 8 * (Math.random() - 0.5));
+          
+          const size = (Math.random() * 2.8 + 1.2) * pulse * (1 + cellMouseInfluence * 0.3);
+          
+          // 添加画笔质感：使用渐变透明度
+          ctx.globalAlpha = (0.5 + Math.random() * 0.3) * (1 + mouseInfluence * 0.4);
           ctx.beginPath();
           ctx.arc(cx, cy, size, 0, Math.PI * 2);
-          ctx.fillStyle = color;
           ctx.fill();
           
-          // Riso Offset Highlight
-          if (Math.random() > 0.5) {
-            ctx.beginPath();
-            ctx.arc(cx - 1, cy - 1, size/2, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(255,255,255,0.4)';
-            ctx.fill();
+          // 添加外圈纹理
+          if (size > 2) {
+              ctx.globalAlpha = 0.2 + (mouseInfluence * 0.2);
+              ctx.beginPath();
+              ctx.arc(cx, cy, size * 1.3, 0, Math.PI * 2);
+              ctx.fill();
           }
       }
+      
+      ctx.globalAlpha = 1;
   };
 
   const drawSoftBackground = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-      const gradient = ctx.createRadialGradient(
-          width * 0.3,
-          height * 0.3,
-          20,
-          width * 0.7,
-          height * 0.8,
-          Math.max(width, height)
-      );
-      gradient.addColorStop(0, '#fff9e8');
-      gradient.addColorStop(0.45, '#f6eed8');
-      gradient.addColorStop(1, '#d9d2bd');
-      ctx.fillStyle = gradient;
+      // 艺术风格：浅色背景，类似图片的off-white背景
+      ctx.fillStyle = '#faf9f6';
       ctx.fillRect(0, 0, width, height);
 
+      // 添加轻微的纹理感，模拟画笔质感
       ctx.save();
       ctx.globalAlpha = 0.04;
       ctx.fillStyle = '#000000';
       const speckles = 80;
       for (let i = 0; i < speckles; i++) {
-          const size = Math.random() * 3;
-          ctx.fillRect(Math.random() * width, Math.random() * height, size, size);
+          const size = Math.random() * 1.5 + 0.5;
+          ctx.beginPath();
+          ctx.arc(Math.random() * width, Math.random() * height, size, 0, Math.PI * 2);
+          ctx.fill();
       }
       ctx.restore();
   };
@@ -201,16 +290,52 @@ const PlantCanvas: React.FC<PlantCanvasProps> = ({ analyzer, dna, labState, onSn
       fill: string,
       stroke: string
   ) => {
-      const gradient = ctx.createRadialGradient(x - radius / 3, y - radius / 3, radius * 0.2, x, y, radius);
-      gradient.addColorStop(0, '#ffffff');
-      gradient.addColorStop(1, fill);
+      // 增强光标影响：节点大小、位置和形状
+      const mouseInfluence = mouseRef.current.active ? 
+          Math.max(0, 1 - Math.hypot(x - mouseRef.current.x, y - mouseRef.current.y) / 120) : 0;
+      
+      const adjustedRadius = radius * (1 + mouseInfluence * 0.5);
+      
+      // 光标吸引：节点向鼠标方向轻微移动（限制影响范围）
+      let offsetX = mouseInfluence * 5 * (Math.random() - 0.5);
+      let offsetY = mouseInfluence * 5 * (Math.random() - 0.5);
+      if (mouseInfluence > 0.3) {
+          const dx = mouseRef.current.x - x;
+          const dy = mouseRef.current.y - y;
+          // 限制吸引强度，避免植物被拉出视野
+          const attractStrength = mouseInfluence * 0.2;
+          offsetX = dx * attractStrength;
+          offsetY = dy * attractStrength;
+      }
+      
+      // 艺术风格：使用点状纹理填充
+      ctx.fillStyle = fill;
+      ctx.globalAlpha = 0.55 + (mouseInfluence * 0.35);
+      
+      // 主圆
       ctx.beginPath();
-      ctx.fillStyle = gradient;
-      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.arc(x + offsetX, y + offsetY, adjustedRadius, 0, Math.PI * 2);
       ctx.fill();
-      ctx.lineWidth = 1;
+      
+      // 添加内部点状纹理
+      const texturePoints = Math.floor(adjustedRadius * 2);
+      ctx.globalAlpha = 0.3 + (mouseInfluence * 0.3);
+      for (let i = 0; i < texturePoints; i++) {
+          const r = adjustedRadius * Math.sqrt(Math.random()) * 0.7;
+          const theta = Math.random() * 2 * Math.PI;
+          const px = x + offsetX + r * Math.cos(theta);
+          const py = y + offsetY + r * Math.sin(theta);
+          ctx.beginPath();
+          ctx.arc(px, py, 1.5, 0, Math.PI * 2);
+          ctx.fill();
+      }
+      
+      // 描边
+      ctx.lineWidth = 1.5 + mouseInfluence * 0.5;
       ctx.strokeStyle = stroke;
-      ctx.globalAlpha = 0.6;
+      ctx.globalAlpha = 0.75 + (mouseInfluence * 0.25);
+      ctx.beginPath();
+      ctx.arc(x + offsetX, y + offsetY, adjustedRadius, 0, Math.PI * 2);
       ctx.stroke();
       ctx.globalAlpha = 1;
   };
@@ -220,22 +345,62 @@ const PlantCanvas: React.FC<PlantCanvasProps> = ({ analyzer, dna, labState, onSn
   // ----------------------------------------------------------------------
 
   const drawFractal = (ctx: CanvasRenderingContext2D, x: number, y: number, len: number, angle: number, depth: number, width: number, maxDepth: number) => {
-      // Calculate end point
+      // 光标影响：计算鼠标对分支的影响
+      const mouseInfluence = mouseRef.current.active ? 
+          Math.max(0, 1 - Math.hypot(x - mouseRef.current.x, y - mouseRef.current.y) / 250) : 0;
+      
+      // 计算端点，添加光标吸引效果
       const rad = angle * Math.PI / 180;
-      const x2 = x + Math.sin(rad) * len; 
-      const y2 = y - Math.cos(rad) * len;
+      let x2 = x + Math.sin(rad) * len; 
+      let y2 = y - Math.cos(rad) * len;
+      
+      // 光标吸引：分支向光标方向轻微弯曲（限制影响范围）
+      if (mouseInfluence > 0.1) {
+          const dx = mouseRef.current.x - x;
+          const dy = mouseRef.current.y - y;
+          const attractAngle = Math.atan2(dy, dx) * 180 / Math.PI;
+          const angleDiff = ((attractAngle - angle + 180) % 360) - 180;
+          // 限制弯曲强度，避免植物被拉出视野
+          const newAngle = angle + angleDiff * mouseInfluence * 0.15;
+          const newRad = newAngle * Math.PI / 180;
+          x2 = x + Math.sin(newRad) * len;
+          y2 = y - Math.cos(newRad) * len;
+      }
 
-      // Draw Stippled Branch
-      drawStippledLine(ctx, x, y, x2, y2, width, dna.colorPalette[0]);
+      // 绘制分支，使用更细的线条
+      drawStippledLine(ctx, x, y, x2, y2, width * (0.8 + mouseInfluence * 0.2), dna.colorPalette[0]);
 
       if (depth > 2 && (depth % 2 === 0 || depth === maxDepth)) {
-          // Draw Leaves/Fruit at nodes
-          const leafSize = Math.max(3, (12 - depth));
+          const leafSize = Math.max(2, (10 - depth));
           if (dna.growthArchitecture.includes('succulent') || dna.growthArchitecture.includes('cactus')) {
-             drawCellularCluster(ctx, x2, y2, leafSize * 2, dna.colorPalette[1], dna.colorPalette[0]);
+             drawCellularCluster(ctx, x2, y2, leafSize * 1.5, dna.colorPalette[1], dna.colorPalette[0]);
           } else {
-             // Simple stippled leaf
-             drawStippledLine(ctx, x2, y2, x2 + Math.sin(rad + 0.5) * leafSize*2, y2 - Math.cos(rad + 0.5) * leafSize*2, width/2, dna.colorPalette[1]);
+             // 艺术风格的叶子：带有纹理的线条和点状效果
+             const leafAngle = rad + (Math.random() - 0.5) * 0.8;
+             const leafEndX = x2 + Math.sin(leafAngle) * leafSize * 1.5;
+             const leafEndY = y2 - Math.cos(leafAngle) * leafSize * 1.5;
+             
+             // 叶子主线条
+             drawStippledLine(ctx, x2, y2, leafEndX, leafEndY, width/3, dna.colorPalette[1]);
+             
+             // 添加叶子纹理：小点状元素
+             const leafMouseInfluence = mouseRef.current.active ? 
+                 Math.max(0, 1 - Math.hypot((x2 + leafEndX) / 2 - mouseRef.current.x, (y2 + leafEndY) / 2 - mouseRef.current.y) / 120) : 0;
+             
+             if (leafSize > 3) {
+                 ctx.fillStyle = dna.colorPalette[1];
+                 ctx.globalAlpha = 0.4 + (leafMouseInfluence * 0.3);
+                 for (let i = 0; i < 3; i++) {
+                     const t = 0.3 + i * 0.2;
+                     const px = x2 + (leafEndX - x2) * t;
+                     const py = y2 + (leafEndY - y2) * t;
+                     const offset = leafSize * 0.3;
+                     ctx.beginPath();
+                     ctx.arc(px + (Math.random() - 0.5) * offset, py + (Math.random() - 0.5) * offset, 1.5, 0, Math.PI * 2);
+                     ctx.fill();
+                 }
+                 ctx.globalAlpha = 1;
+             }
           }
       }
 
@@ -244,12 +409,17 @@ const PlantCanvas: React.FC<PlantCanvasProps> = ({ analyzer, dna, labState, onSn
           const curLen = len * growth;
           
           if (curLen > 2) {
-              const stressJitter = (Math.random() - 0.5) * stressRef.current * 40;
+              const stressJitter = (Math.random() - 0.5) * stressRef.current * 30;
               const spread = dna.angleVariance + stressJitter;
-              const sway = Math.sin(windRef.current + depth) * (5 + stressRef.current * 10);
+              const sway = Math.sin(windRef.current + depth) * (4 + stressRef.current * 8);
               
-              drawFractal(ctx, x2, y2, curLen * 0.8, angle - spread + sway, depth + 1, width * 0.7, maxDepth);
-              drawFractal(ctx, x2, y2, curLen * 0.8, angle + spread + sway, depth + 1, width * 0.7, maxDepth);
+              // 光标影响传播到子分支
+              const childMouseInfluence = mouseRef.current.active ? 
+                  Math.max(0, 1 - Math.hypot(x2 - mouseRef.current.x, y2 - mouseRef.current.y) / 250) : 0;
+              const adjustedSway = sway + (childMouseInfluence * 15 * (Math.random() - 0.5));
+              
+              drawFractal(ctx, x2, y2, curLen * 0.75, angle - spread + adjustedSway, depth + 1, width * 0.65, maxDepth);
+              drawFractal(ctx, x2, y2, curLen * 0.75, angle + spread + adjustedSway, depth + 1, width * 0.65, maxDepth);
           }
       }
   };
@@ -263,8 +433,21 @@ const PlantCanvas: React.FC<PlantCanvasProps> = ({ analyzer, dna, labState, onSn
       const totalSegments = segments * (growthRef.current / 100);
 
       for(let i=0; i < totalSegments; i++) {
-          const sway = Math.sin(i * 0.3 + windRef.current) * 10;
+          // 光标影响：计算鼠标对当前段的影响
+          const mouseInfluence = mouseRef.current.active ? 
+              Math.max(0, 1 - Math.hypot(cx - mouseRef.current.x, cy - mouseRef.current.y) / 200) : 0;
+          
+          const sway = Math.sin(i * 0.3 + windRef.current) * 8 + (mouseInfluence * 8);
           const curve = Math.cos(i * 0.1) * (dna.angleVariance / 5);
+          
+          // 光标吸引：向鼠标方向轻微弯曲（限制影响范围）
+          if (mouseInfluence > 0.1) {
+              const dx = mouseRef.current.x - cx;
+              const dy = mouseRef.current.y - cy;
+              const attractAngle = Math.atan2(dy, dx);
+              // 限制弯曲强度，避免植物被拉出视野
+              angle = angle * (1 - mouseInfluence * 0.1) + attractAngle * mouseInfluence * 0.1;
+          }
           
           angle += (curve + sway * 0.1) * 0.1;
           
@@ -275,13 +458,28 @@ const PlantCanvas: React.FC<PlantCanvasProps> = ({ analyzer, dna, labState, onSn
           const cpX = (cx + nx) / 2 + sway;
           const cpY = (cy + ny) / 2;
 
-          drawStippledCurve(ctx, cx, cy, cpX, cpY, nx, ny, Math.max(1, 6 - i*0.1), dna.colorPalette[0]);
+          drawStippledCurve(ctx, cx, cy, cpX, cpY, nx, ny, Math.max(1.5, 5 - i*0.08), dna.colorPalette[0]);
 
-          // Leaves
-          if (i % 3 === 0) {
-              const lx = nx + Math.cos(timeRef.current + i) * 15;
-              const ly = ny + Math.sin(timeRef.current + i) * 10;
-              drawStippledLine(ctx, nx, ny, lx, ly, 2, dna.colorPalette[1]);
+          // Leaves - 艺术风格：带有纹理
+          if (i % 4 === 0) {
+              const lx = nx + Math.cos(timeRef.current + i) * 12;
+              const ly = ny + Math.sin(timeRef.current + i) * 8;
+              
+              // 叶子主线条
+              drawStippledLine(ctx, nx, ny, lx, ly, 1.5, dna.colorPalette[1]);
+              
+              // 添加叶子纹理点
+              const leafMouseInfluence = mouseRef.current.active ? 
+                  Math.max(0, 1 - Math.hypot((nx + lx) / 2 - mouseRef.current.x, (ny + ly) / 2 - mouseRef.current.y) / 120) : 0;
+              
+              ctx.fillStyle = dna.colorPalette[1];
+              ctx.globalAlpha = 0.35 + (leafMouseInfluence * 0.3);
+              const midX = (nx + lx) / 2;
+              const midY = (ny + ly) / 2;
+              ctx.beginPath();
+              ctx.arc(midX, midY, 1.2, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.globalAlpha = 1;
           }
 
           cx = nx; cy = ny;
@@ -309,8 +507,14 @@ const PlantCanvas: React.FC<PlantCanvasProps> = ({ analyzer, dna, labState, onSn
 
   const drawWillow = (ctx: CanvasRenderingContext2D, x: number, y: number) => {
       const h = 100 * (growthRef.current/100);
+      
+      // 光标影响树干
+      const trunkMouseInfluence = mouseRef.current.active ? 
+          Math.max(0, 1 - Math.hypot(x - mouseRef.current.x, y - h/2 - mouseRef.current.y) / 200) : 0;
+      const trunkOffset = trunkMouseInfluence * 15 * (Math.random() - 0.5);
+      
       // Trunk
-      drawStippledCurve(ctx, x, y, x + 20, y - h/2, x, y - h, 14, dna.colorPalette[0]);
+      drawStippledCurve(ctx, x, y, x + 20 + trunkOffset, y - h/2, x, y - h, 12, dna.colorPalette[0]);
       
       const topY = y - h;
       const branches = 12;
@@ -319,18 +523,26 @@ const PlantCanvas: React.FC<PlantCanvasProps> = ({ analyzer, dna, labState, onSn
           // Branch arch
           const bx = x + (Math.random()-0.5) * 100;
           const by = topY + (Math.random()-0.5) * 30;
-          drawStippledCurve(ctx, x, topY, x, topY-20, bx, by, 3, dna.colorPalette[0]);
           
-          // Hanging Vine
+          // 光标影响分支
+          const branchMouseInfluence = mouseRef.current.active ? 
+              Math.max(0, 1 - Math.hypot(bx - mouseRef.current.x, by - mouseRef.current.y) / 180) : 0;
+          const branchOffsetX = branchMouseInfluence * 10 * (Math.random() - 0.5);
+          const branchOffsetY = branchMouseInfluence * 10 * (Math.random() - 0.5);
+          
+          drawStippledCurve(ctx, x, topY, x + branchOffsetX, topY-20 + branchOffsetY, bx, by, 2.5, dna.colorPalette[0]);
+          
+          // Hanging Vine - 极简风格
           const drop = 160 * (growthRef.current/100);
           let vx = bx, vy = by;
           const segs = 20;
           for(let s=0; s<segs; s++) {
-               const wave = Math.sin(s + timeRef.current * 4 + stressRef.current * 15) * 6;
+               const vineMouseInfluence = mouseRef.current.active ? 
+                   Math.max(0, 1 - Math.hypot(vx - mouseRef.current.x, vy - mouseRef.current.y) / 150) : 0;
+               const wave = Math.sin(s + timeRef.current * 4 + stressRef.current * 15) * 5 + (vineMouseInfluence * 8);
                const nx = vx + wave;
                const ny = vy + (drop/segs);
-               // Very light stippling for willow threads
-               drawStippledLine(ctx, vx, vy, nx, ny, 1.5, dna.colorPalette[1]);
+               drawStippledLine(ctx, vx, vy, nx, ny, 1.2, dna.colorPalette[1]);
                vx = nx; vy = ny;
           }
       }
@@ -548,32 +760,12 @@ const PlantCanvas: React.FC<PlantCanvasProps> = ({ analyzer, dna, labState, onSn
     timeRef.current += 0.02;
     const by = canvas.height * 0.9;
     
-    // RISOGRAPH OFFSET (Misalignment Physics)
-    const baseOffset = 4 + (stressRef.current * 40);
-    const offsetX = Math.sin(timeRef.current * 8) * baseOffset;
-    const offsetY = Math.cos(timeRef.current * 5) * baseOffset;
+    // 单层绘制，无双层偏移效果
+    // 移除缩放变换，避免位置偏移问题
+    // 如果需要脉冲效果，可以在各个绘制函数内部实现
 
-    const pulse = 1.0 + (energyRef.current * 0.2);
-    
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.scale(pulse, pulse);
-    ctx.translate(-cx, -cy);
-
-    // LAYER A (Cyan/Blue Channel)
-    ctx.save();
-    ctx.translate(offsetX, offsetY);
+    // 直接绘制，光标影响已集成到各个绘制函数中
     drawArchitecture(ctx, cx, cy, by, canvas.width, canvas.height);
-    ctx.restore();
-
-    // LAYER B (Pink/Red Channel - Misaligned)
-    ctx.save();
-    ctx.translate(-offsetX, -offsetY);
-    ctx.globalAlpha = 0.7; // Transparency for blending
-    drawArchitecture(ctx, cx, cy, by, canvas.width, canvas.height);
-    ctx.restore();
-
-    ctx.restore();
 
     requestRef.current = requestAnimationFrame(animate);
   };
@@ -613,6 +805,33 @@ const PlantCanvas: React.FC<PlantCanvasProps> = ({ analyzer, dna, labState, onSn
       window.addEventListener('resize', resize);
       resize();
       return () => window.removeEventListener('resize', resize);
+  }, []);
+
+  // Mouse/Cursor Tracking
+  useEffect(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const handleMouseMove = (e: MouseEvent) => {
+          const rect = canvas.getBoundingClientRect();
+          mouseRef.current = {
+              x: e.clientX - rect.left,
+              y: e.clientY - rect.top,
+              active: true
+          };
+      };
+
+      const handleMouseLeave = () => {
+          mouseRef.current.active = false;
+      };
+
+      canvas.addEventListener('mousemove', handleMouseMove);
+      canvas.addEventListener('mouseleave', handleMouseLeave);
+
+      return () => {
+          canvas.removeEventListener('mousemove', handleMouseMove);
+          canvas.removeEventListener('mouseleave', handleMouseLeave);
+      };
   }, []);
 
   return (
