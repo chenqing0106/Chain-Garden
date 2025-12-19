@@ -84,22 +84,22 @@ const MintModal: React.FC<MintModalProps> = ({
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-      data-oid="r2t.zb5"
+      data-oid="5mdq:hd"
     >
       <div
         className="bg-riso-paper w-full max-w-md border-4 border-riso-black shadow-[16px_16px_0px_0px_rgba(26,26,26,1)] relative flex flex-col max-h-[90vh]"
-        data-oid="3gxdc22"
+        data-oid="vh1nrze"
       >
         {/* Modal Header */}
         <div
           className="bg-riso-black text-white p-3 flex justify-between items-center border-b-4 border-white"
-          data-oid="rzaqzoh"
+          data-oid="ym5mp5m"
         >
-          <div className="flex items-center gap-2" data-oid="xribre:">
-            <Cpu className="w-5 h-5" data-oid="mv5y8yf" />
+          <div className="flex items-center gap-2" data-oid="x3_7w3k">
+            <Cpu className="w-5 h-5" data-oid="xu7ibox" />
             <h2
               className="font-bold font-mono text-lg tracking-widest"
-              data-oid="tgt-_4a"
+              data-oid="a_:7dyx"
             >
               MINT_TERMINAL_v1
             </h2>
@@ -107,44 +107,44 @@ const MintModal: React.FC<MintModalProps> = ({
           <button
             onClick={onClose}
             className="hover:text-riso-pink transition-colors"
-            data-oid="k-6x20x"
+            data-oid="lq0shew"
           >
-            <X className="w-6 h-6" data-oid=":xe5ho1" />
+            <X className="w-6 h-6" data-oid="cxt-tug" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto font-mono" data-oid="ej5cnjo">
+        <div className="p-6 overflow-y-auto font-mono" data-oid="2huq8w3">
           {step === 3 ? (
             <div
               className="text-center space-y-6 animate-in fade-in zoom-in duration-300"
-              data-oid="gc60emm"
+              data-oid="qh_mx8v"
             >
               <div
                 className="w-24 h-24 bg-riso-green rounded-full mx-auto flex items-center justify-center border-4 border-black"
-                data-oid="sf8:t2x"
+                data-oid=":t6_fwt"
               >
-                <Check className="w-12 h-12 text-white" data-oid="aekisa." />
+                <Check className="w-12 h-12 text-white" data-oid="7bucp-p" />
               </div>
-              <div data-oid="v756gjz">
+              <div data-oid="q-wrm0v">
                 <h3
                   className="text-2xl font-bold text-riso-black mb-2"
-                  data-oid="_tz8b.r"
+                  data-oid="lj5h3ox"
                 >
                   SPECIMEN ON-CHAIN
                 </h3>
-                <p className="text-xs text-gray-600" data-oid="4_z0vjh">
+                <p className="text-xs text-gray-600" data-oid="pe:1bee">
                   Token ID #{Math.floor(Math.random() * 9999)} successfully
                   minted.
                 </p>
               </div>
               <div
                 className="bg-gray-100 p-4 border-2 border-dashed border-gray-400 text-left text-xs break-all font-mono"
-                data-oid="q2x6.bd"
+                data-oid=":m9-r1k"
               >
                 <span
                   className="block font-bold text-gray-500 mb-1"
-                  data-oid=".15n8q2"
+                  data-oid="t3m6zj:"
                 >
                   TRANSACTION HASH:
                 </span>
@@ -153,27 +153,27 @@ const MintModal: React.FC<MintModalProps> = ({
               <button
                 onClick={onClose}
                 className="w-full py-3 bg-riso-black text-white font-bold hover:bg-riso-green border-2 border-transparent hover:border-black transition-all"
-                data-oid="21zq0h:"
+                data-oid="e.loxhw"
               >
                 RETURN TO LAB
               </button>
             </div>
           ) : (
-            <div className="space-y-6" data-oid="2b6svke">
+            <div className="space-y-6" data-oid="s:.hu4h">
               {/* Image Preview */}
               <div
                 className="relative w-full aspect-square border-2 border-black p-2 bg-white rotate-1 shadow-md"
-                data-oid="3vgb.px"
+                data-oid="6z77hue"
               >
                 <img
                   src={specimen.imageData}
                   className="w-full h-full object-cover mix-blend-multiply"
-                  data-oid=".fbs-1u"
+                  data-oid=":5n-jp9"
                 />
 
                 <div
                   className="absolute bottom-2 right-2 bg-white/90 px-2 py-1 text-xs font-bold border border-black"
-                  data-oid="0_y8pbb"
+                  data-oid="a483f1d"
                 >
                   {specimen.dna.speciesName}
                 </div>
@@ -181,10 +181,10 @@ const MintModal: React.FC<MintModalProps> = ({
 
               {/* Step 0: Curate Assets */}
               {step === 0 && (
-                <div className="space-y-3" data-oid="2vjnjs9">
+                <div className="space-y-3" data-oid="yddx1:7">
                   <div
                     className="text-sm font-bold border-b-2 border-black pb-1 mb-2"
-                    data-oid="i69lfr4"
+                    data-oid="-_y.tc_"
                   >
                     CURATE ON-CHAIN ASSETS
                   </div>
@@ -193,21 +193,21 @@ const MintModal: React.FC<MintModalProps> = ({
                   <div
                     onClick={() => toggleSelection("image")}
                     className={`flex items-center justify-between p-3 border-2 border-black transition-all cursor-not-allowed bg-gray-100`}
-                    data-oid="oxn2ian"
+                    data-oid="p283hg9"
                   >
-                    <div className="flex items-center gap-3" data-oid="g1z_yml">
+                    <div className="flex items-center gap-3" data-oid=".g1-:7e">
                       <FileImage
                         className="w-5 h-5 text-riso-blue"
-                        data-oid="s0jbgi-"
+                        data-oid="8dj6:wi"
                       />
 
-                      <div data-oid="fj.06h.">
-                        <div className="text-xs font-bold" data-oid="9wwvuc-">
+                      <div data-oid="-ddwdrt">
+                        <div className="text-xs font-bold" data-oid="itf7-1b">
                           VISUAL SPECIMEN
                         </div>
                         <div
                           className="text-[10px] text-gray-500"
-                          data-oid="bycyczz"
+                          data-oid="mkvpeya"
                         >
                           High-res PNG (Required)
                         </div>
@@ -215,7 +215,7 @@ const MintModal: React.FC<MintModalProps> = ({
                     </div>
                     <Lock
                       className="w-4 h-4 text-gray-400"
-                      data-oid="d-:se4d"
+                      data-oid="4cbud99"
                     />
                   </div>
 
@@ -224,21 +224,21 @@ const MintModal: React.FC<MintModalProps> = ({
                     onClick={() => toggleSelection("dna")}
                     className={`flex items-center justify-between p-3 border-2 border-black transition-all cursor-pointer hover:translate-x-1
                                 ${selection.dna ? "bg-riso-yellow/30" : "bg-white hover:bg-gray-50"}`}
-                    data-oid="qt:7_p-"
+                    data-oid="o78i3z:"
                   >
-                    <div className="flex items-center gap-3" data-oid="xmxnc14">
+                    <div className="flex items-center gap-3" data-oid=":qzdyiu">
                       <Dna
                         className="w-5 h-5 text-riso-green"
-                        data-oid="zj2zkcz"
+                        data-oid="p8mr_m-"
                       />
 
-                      <div data-oid="mfg00o.">
-                        <div className="text-xs font-bold" data-oid="1y5i1u6">
+                      <div data-oid="9ka_7c.">
+                        <div className="text-xs font-bold" data-oid="t1-.u62">
                           GENETIC CODE
                         </div>
                         <div
                           className="text-[10px] text-gray-500"
-                          data-oid="r1a1ohi"
+                          data-oid="tiupc0b"
                         >
                           DNA Parameters as Traits
                         </div>
@@ -246,12 +246,12 @@ const MintModal: React.FC<MintModalProps> = ({
                     </div>
                     <div
                       className={`w-4 h-4 border-2 border-black flex items-center justify-center ${selection.dna ? "bg-riso-black" : "bg-white"}`}
-                      data-oid="od8bq:y"
+                      data-oid="ofy4f_w"
                     >
                       {selection.dna && (
                         <Check
                           className="w-3 h-3 text-white"
-                          data-oid="fwxdel3"
+                          data-oid="v2e5nn1"
                         />
                       )}
                     </div>
@@ -265,21 +265,21 @@ const MintModal: React.FC<MintModalProps> = ({
                     className={`flex items-center justify-between p-3 border-2 border-black transition-all 
                                 ${!specimen.audioData ? "opacity-50 cursor-not-allowed bg-gray-100" : "cursor-pointer hover:translate-x-1"}
                                 ${selection.audio ? "bg-riso-pink/20" : ""}`}
-                    data-oid=":.pmves"
+                    data-oid="t60ynn5"
                   >
-                    <div className="flex items-center gap-3" data-oid="xb:tdn-">
+                    <div className="flex items-center gap-3" data-oid="n.hmtvb">
                       <Music
                         className="w-5 h-5 text-riso-pink"
-                        data-oid="j9vmobd"
+                        data-oid="xr-jpxw"
                       />
 
-                      <div data-oid="b.d1puu">
-                        <div className="text-xs font-bold" data-oid="zxenna9">
+                      <div data-oid=":mevg5-">
+                        <div className="text-xs font-bold" data-oid="p:gjori">
                           GENERATIVE MUSIC
                         </div>
                         <div
                           className="text-[10px] text-gray-500"
-                          data-oid="0i.26.8"
+                          data-oid="-hiuac_"
                         >
                           {specimen.audioData
                             ? "Include Audio (MP3)"
@@ -289,12 +289,12 @@ const MintModal: React.FC<MintModalProps> = ({
                     </div>
                     <div
                       className={`w-4 h-4 border-2 border-black flex items-center justify-center ${selection.audio ? "bg-riso-black" : "bg-white"}`}
-                      data-oid="qk16vrz"
+                      data-oid="3.4ubnu"
                     >
                       {selection.audio && (
                         <Check
                           className="w-3 h-3 text-white"
-                          data-oid="llolyja"
+                          data-oid="thaf_ju"
                         />
                       )}
                     </div>
@@ -308,21 +308,21 @@ const MintModal: React.FC<MintModalProps> = ({
                     className={`flex items-center justify-between p-3 border-2 border-black transition-all 
                                 ${!specimen.reflectionAudioData ? "opacity-50 cursor-not-allowed bg-gray-100" : "cursor-pointer hover:translate-x-1"}
                                 ${selection.voice ? "bg-riso-blue/20" : ""}`}
-                    data-oid="75t8x76"
+                    data-oid="l0emwt4"
                   >
-                    <div className="flex items-center gap-3" data-oid="ret55q1">
+                    <div className="flex items-center gap-3" data-oid="7c63i76">
                       <MessageCircle
                         className="w-5 h-5 text-riso-blue"
-                        data-oid="crwd_nv"
+                        data-oid="1fla-1l"
                       />
 
-                      <div data-oid="50wwxiz">
-                        <div className="text-xs font-bold" data-oid="0693q85">
+                      <div data-oid="n2fk93k">
+                        <div className="text-xs font-bold" data-oid="3chtqe4">
                           VOICE REFLECTION
                         </div>
                         <div
                           className="text-[10px] text-gray-500"
-                          data-oid="zi6g9bp"
+                          data-oid="o4jc:7:"
                         >
                           {specimen.reflectionAudioData
                             ? "Include Reflection"
@@ -332,12 +332,12 @@ const MintModal: React.FC<MintModalProps> = ({
                     </div>
                     <div
                       className={`w-4 h-4 border-2 border-black flex items-center justify-center ${selection.voice ? "bg-riso-black" : "bg-white"}`}
-                      data-oid="m9ujw3:"
+                      data-oid="04cf7a0"
                     >
                       {selection.voice && (
                         <Check
                           className="w-3 h-3 text-white"
-                          data-oid="3mkxup9"
+                          data-oid="qyfb_:9"
                         />
                       )}
                     </div>
@@ -348,16 +348,16 @@ const MintModal: React.FC<MintModalProps> = ({
               {/* Progress / Action Area */}
               <div
                 className="border-t-4 border-double border-black pt-4"
-                data-oid="v_1cs0h"
+                data-oid="q--z1m5"
               >
                 {step === 0 && (
                   <button
                     onClick={handleMintClick}
                     disabled={isMinting}
                     className="w-full py-4 bg-riso-pink text-white font-bold text-lg border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:translate-x-1 hover:shadow-none transition-all flex items-center justify-center gap-3"
-                    data-oid="r-u8hhf"
+                    data-oid="5p2wvby"
                   >
-                    <Database className="w-5 h-5" data-oid="oanwv74" />
+                    <Database className="w-5 h-5" data-oid="dpo2boi" />
                     INITIATE MINT
                   </button>
                 )}
@@ -365,31 +365,31 @@ const MintModal: React.FC<MintModalProps> = ({
                 {step === 1 && (
                   <div
                     className="flex flex-col gap-2 text-riso-blue animate-pulse"
-                    data-oid="f-.d-ku"
+                    data-oid="q7zqg52"
                   >
                     <div
                       className="flex items-center gap-2 font-bold"
-                      data-oid="x2t-cu."
+                      data-oid="xrwg6lw"
                     >
                       <Loader
                         className="animate-spin w-4 h-4"
-                        data-oid="2_0kbr2"
+                        data-oid="zn_wqjb"
                       />
                       UPLOADING ASSETS TO IPFS...
                     </div>
                     <div
                       className="text-[10px] font-mono text-gray-500"
-                      data-oid="3ick1ke"
+                      data-oid="kwenwj0"
                     >
                       Building Metadata JSON based on selection...
                     </div>
                     <div
                       className="h-2 w-full bg-gray-200 border border-black overflow-hidden"
-                      data-oid="kraog2s"
+                      data-oid="9wjior7"
                     >
                       <div
                         className="h-full bg-riso-blue w-2/3 animate-pulse"
-                        data-oid="ds-diof"
+                        data-oid="8odtek3"
                       ></div>
                     </div>
                   </div>
@@ -398,19 +398,19 @@ const MintModal: React.FC<MintModalProps> = ({
                 {step === 2 && (
                   <div
                     className="flex flex-col gap-2 text-riso-green"
-                    data-oid="jrffswf"
+                    data-oid="po:qv.c"
                   >
                     <div
                       className="flex items-center gap-2 font-bold"
-                      data-oid="621-d-u"
+                      data-oid="n74din9"
                     >
                       <Wallet
                         className="animate-bounce w-4 h-4"
-                        data-oid="vnj7106"
+                        data-oid=".av84.z"
                       />
                       AWAITING SIGNATURE...
                     </div>
-                    <p className="text-xs text-gray-500" data-oid="dksn--s">
+                    <p className="text-xs text-gray-500" data-oid="-utrnsk">
                       Please confirm transaction in your wallet.
                     </p>
                   </div>
