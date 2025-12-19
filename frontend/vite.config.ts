@@ -12,8 +12,12 @@ export default defineConfig(({ mode }) => {
       },
       plugins: [react()],
       define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+        // AI Service 配置
+        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY || ''),
+        'process.env.QWEN_API_KEY': JSON.stringify(env.QWEN_API_KEY || ''),
+        'process.env.AI_SERVICE_PROVIDER': JSON.stringify(env.AI_SERVICE_PROVIDER || ''),
+        // 为了向后兼容，保留 API_KEY（优先使用 QWEN_API_KEY）
+        'process.env.API_KEY': JSON.stringify(env.QWEN_API_KEY || env.GEMINI_API_KEY || ''),
         // 显式暴露 VITE_ 开头的环境变量给客户端（通过 define 确保在浏览器中可用）
         'import.meta.env.VITE_PINATA_JWT': JSON.stringify(env.VITE_PINATA_JWT || ''),
         'import.meta.env.VITE_PINATA_API_BASE': JSON.stringify(env.VITE_PINATA_API_BASE || 'https://api.pinata.cloud'),

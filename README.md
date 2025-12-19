@@ -40,8 +40,9 @@ chain-garden/
 - **智能合约**: Solidity 0.8.20, Hardhat, OpenZeppelin
 - **前端**: React 19, TypeScript, Vite, TailwindCSS
 - **Web3**: Ethers.js v6
-- **AI**: Google Gemini API
+- **AI**: Qwen API（推荐）或 Google Gemini API
 - **音频**: Tone.js
+- **存储**: IPFS (Pinata), LocalStorage
 
 ---
 
@@ -75,8 +76,10 @@ PRIVATE_KEY=your_private_key_here
 # Etherscan API Key (可选，用于合约验证)
 ETHERSCAN_API_KEY=your_etherscan_key
 
-# Gemini API Key (前端使用)
-GEMINI_API_KEY=your_gemini_key
+# AI 服务（至少配置一个）
+QWEN_API_KEY=your_qwen_api_key_here      # 推荐：阿里云通义千问
+GEMINI_API_KEY=your_gemini_api_key_here  # 可选：Google Gemini
+AI_SERVICE_PROVIDER=qwen  # 可选：明确指定使用的服务
 
 # Pinata JWT (IPFS上传)
 # 从以下地址获取：https://www.pinata.cloud/
@@ -101,7 +104,7 @@ npm run deploy:local
 npm run deploy:sepolia
 ```
 
-部署成功后，更新 `frontend/services/web3Service.ts` 中的 `CONTRACT_ADDRESS`。详细步骤请查看 [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)。
+部署成功后，更新 `frontend/services/web3Service.ts` 中的 `CONTRACT_ADDRESS`。详细步骤请查看 [部署指南](./docs/guides/部署指南.md)。
 
 ### 运行前端
 
@@ -184,6 +187,16 @@ MIT License
 	- `energy`: 0.0–1.0 的能量值，影响生长活性与节奏密度。
 
 - **如何查看/修改**: 具体可配置字段与取值定义位于 `frontend/types.ts` 中，渲染与生长逻辑由 `frontend/components/PlantCanvas.tsx` 和相关服务（如 `plantMusicService.ts`）驱动。
+
+---
+
+## 📚 文档索引
+
+项目文档已整理到 `docs/` 目录，按类别组织：
+
+**贡献指南**：查看 [CONTRIBUTING.md](./docs/CONTRIBUTING.md)
+
+**完整文档索引**：查看 [docs/README.md](./docs/README.md)
 
 ---
 

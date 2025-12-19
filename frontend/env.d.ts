@@ -5,7 +5,9 @@ interface ImportMetaEnv {
   readonly VITE_PINATA_API_BASE?: string;
   readonly VITE_PINATA_GATEWAY?: string;
   readonly GEMINI_API_KEY?: string;
+  readonly QWEN_API_KEY?: string;
   readonly API_KEY?: string;
+  readonly AI_SERVICE_PROVIDER?: string;
 }
 
 interface ImportMeta {
