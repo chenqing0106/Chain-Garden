@@ -12,5 +12,14 @@ export interface AIService {
    * @throws 如果 API 调用失败或返回无效数据
    */
   generatePlantDNA(vibe: string): Promise<PlantDNA>;
+
+  /**
+   * 根据上传的图片生成植物 DNA（多模态功能）
+   * @param imageFile 用户上传的图片文件
+   * @param additionalPrompt 可选的辅助文本描述
+   * @returns 生成的植物 DNA
+   * @throws 如果 API 调用失败、模型不支持图片分析或返回无效数据
+   */
+  generatePlantDNAFromImage(imageFile: File, additionalPrompt?: string): Promise<PlantDNA>;
 }
 

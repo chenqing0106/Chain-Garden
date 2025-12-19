@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { AudioAnalyzer } from "./services/audioService";
 import { PlantMusicService } from "./services/plantMusicService";
-import { generatePlantDNA } from "./services/aiServiceFactory";
+import { aiService } from "./services/aiServiceFactory";
 import { Web3Service } from "./services/web3Service";
 import { StorageService } from "./services/storageService";
 import PlantCanvas from "./components/PlantCanvas";
@@ -135,6 +135,11 @@ const App: React.FC = () => {
   );
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Image Upload State (for multimodal AI)
+  const [uploadedImage, setUploadedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   // Initial check for wallet and load collection
   useEffect(() => {
@@ -440,17 +445,59 @@ const App: React.FC = () => {
     }
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image size must be less than 5MB");
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      alert("Please upload a valid image file");
+      return;
+    }
+
+    setUploadedImage(file);
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const clearImage = () => {
+    setUploadedImage(null);
+    setImagePreview(null);
+    if (imageInputRef.current) {
+      imageInputRef.current.value = '';
+    }
+  };
+
   const handleGenerateDNA = async () => {
-    if (!prompt.trim()) return;
+    if (!prompt.trim() && !uploadedImage) return;
     setIsGenerating(true);
     try {
-      const newDna = await generatePlantDNA(prompt);
+      let newDna: PlantDNA;
+      
+      if (uploadedImage) {
+        newDna = await aiService.generatePlantDNAFromImage(
+          uploadedImage, 
+          prompt.trim() || undefined
+        );
+      } else {
+        newDna = await aiService.generatePlantDNA(prompt);
+      }
+      
       setDna(newDna);
       setIsManualMode(false);
       setLabState("SYNTHESIZED");
+      clearImage();
     } catch (e) {
       console.error(e);
-      alert("Failed to analyze vibe. Using cached seed.");
+      alert("Failed to analyze. Using cached seed.");
       setLabState("SYNTHESIZED");
     } finally {
       setIsGenerating(false);
@@ -893,10 +940,57 @@ const App: React.FC = () => {
                       data-oid="u8y_k2e"
                     />
 
+                    <div className="space-y-2" data-oid="img_upload_section">
+                      <div className="text-xs font-mono text-gray-600 text-center" data-oid="img_or_text">
+                        OR UPLOAD AN IMAGE
+                      </div>
+                      
+                      <input
+                        ref={imageInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                        data-oid="img_input_hidden"
+                      />
+                      
+                      <button
+                        onClick={() => imageInputRef.current?.click()}
+                        className="w-full py-2 px-3 border-2 border-riso-black bg-white hover:bg-riso-blue hover:text-white font-bold text-sm flex items-center justify-center gap-2 transition-colors"
+                        data-oid="img_upload_btn"
+                      >
+                        <Upload className="w-4 h-4" data-oid="img_upload_icon" />
+                        {uploadedImage ? "CHANGE IMAGE" : "UPLOAD IMAGE"}
+                      </button>
+
+                      {imagePreview && (
+                        <div className="relative border-2 border-riso-black p-2 bg-white" data-oid="img_preview_container">
+                          <img 
+                            src={imagePreview} 
+                            alt="Preview" 
+                            className="w-full h-32 object-cover"
+                            data-oid="img_preview"
+                          />
+                          <button
+                            onClick={clearImage}
+                            className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                            data-oid="img_clear_btn"
+                          >
+                            <XCircle className="w-4 h-4" data-oid="img_clear_icon" />
+                          </button>
+                          {prompt && (
+                            <div className="mt-2 text-xs font-mono text-gray-600" data-oid="img_additional_context">
+                              Additional context: {prompt}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
                     <button
                       onClick={handleGenerateDNA}
-                      disabled={isGenerating || !prompt}
-                      className="w-full py-3 bg-riso-black text-white font-bold border-2 border-transparent hover:bg-riso-green hover:border-black hover:text-black flex items-center justify-center gap-2"
+                      disabled={isGenerating || (!prompt && !uploadedImage)}
+                      className="w-full py-3 bg-riso-black text-white font-bold border-2 border-transparent hover:bg-riso-green hover:border-black hover:text-black flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                       data-oid="eq3fggs"
                     >
                       {isGenerating ? (
