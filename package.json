@@ -26,8 +26,18 @@
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^4.0.0",
     "@openzeppelin/contracts": "^5.0.0",
+    "@openzeppelin/contracts-upgradeable": "^5.4.0",
+    "@zetachain/standard-contracts": "^4.1.0",
     "dotenv": "^16.3.1",
-    "hardhat": "^2.19.0"
+    "hardhat": "^2.19.0",
+    "tsx": "^4.21.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts-upgradeable": "^5.4.0",
+    "@zetachain/protocol-contracts": "^14.1.0",
+    "@zetachain/toolkit": "^16.3.0"
+  },
+  "resolutions": {
+    "commander": "^14.0.2"
   }
 }
-
