@@ -1,4 +1,4 @@
-import { PlantDNA } from "../types";
+import { PlantDNA } from "../../types";
 
 /**
  * AI Service 接口

@@ -1,6 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { PlantDNA } from "../types";
+import { PlantDNA } from "../../types";
 import { AIService } from "./aiService.interface";
+import { buildTextAnalysisPrompt, buildImageAnalysisPrompt } from "./prompts";
 
 // The client gets the API key from the environment variable `GEMINI_API_KEY` automatically
 // If not found, it will try `API_KEY` as fallback (for Vite build-time injection)
@@ -30,34 +31,18 @@ class GeminiService implements AIService {
   }
 
   async generatePlantDNA(vibe: string): Promise<PlantDNA> {
-    // Check if API key is available (either from build-time injection or runtime env)
     const hasApiKey = apiKey || process.env.GEMINI_API_KEY;
     if (!hasApiKey) {
       throw new Error("API key not configured. Please set GEMINI_API_KEY in your .env file in the root directory. See ENV_SETUP.md for details.");
     }
 
     const model = "gemini-2.5-flash";
+    const prompt = buildTextAnalysisPrompt(vibe);
     
     try {
       const response = await ai.models.generateContent({
       model,
-      contents: `Analyze this user input: "${vibe}". It could be a mood, a name, a diary entry, or a random thought.
-    
-    1. Determine the emotional "Mood" (Happy, Melancholic, Mysterious, Aggressive, Calm).
-    2. Determine the "Energy" level (0.0 = still/dead, 1.0 = chaotic/explosive).
-    3. Generate a fictional plant based on these feelings using Risograph/Lo-Fi aesthetics.
-    
-    Architectures:
-    - "fractal_tree": Stable, growth, history.
-    - "organic_vine": Wandering, confused, flexible.
-    - "radial_succulent": Focused, geometric, mandala.
-    - "fern_frond": Mathematical, precise, repetitive.
-    - "weeping_willow": Sad, heavy, gravity-bound.
-    - "alien_shrub": Glitchy, weird, unexpected.
-    - "crystal_cactus": Sharp, defensive, rigid.
-    - "data_blossom": Data-visualization inspired, radial, typographic blooms.
-
-    Return strictly JSON matching the schema.`,
+      contents: prompt,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -112,30 +97,7 @@ class GeminiService implements AIService {
       }
     };
 
-    const promptText = `Analyze this image and generate a fictional plant DNA based on what you see.
-
-${additionalPrompt ? `User's additional context: "${additionalPrompt}"` : ''}
-
-Analyze the image for:
-1. **Colors**: Dominant colors, color harmony, saturation
-2. **Shapes & Forms**: Organic vs geometric, flowing vs rigid, patterns
-3. **Mood & Atmosphere**: Emotional tone (happy, melancholic, mysterious, aggressive, calm)
-4. **Energy Level**: Visual energy from 0.0 (still/peaceful) to 1.0 (chaotic/dynamic)
-5. **Texture & Style**: Smooth, rough, abstract, realistic
-
-Based on your analysis, create a plant using Risograph/Lo-Fi aesthetics.
-
-Architectures:
-- "fractal_tree": Stable, growth, history.
-- "organic_vine": Wandering, flexible, flowing.
-- "radial_succulent": Focused, geometric, mandala-like.
-- "fern_frond": Mathematical, precise, repetitive.
-- "weeping_willow": Sad, heavy, drooping.
-- "alien_shrub": Glitchy, weird, unexpected.
-- "crystal_cactus": Sharp, defensive, angular.
-- "data_blossom": Data-viz inspired, radial, typographic.
-
-Return strictly JSON matching the schema.`;
+    const promptText = buildImageAnalysisPrompt(additionalPrompt);
 
     const model = "gemini-2.0-flash-exp";
     

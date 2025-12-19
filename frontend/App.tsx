@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { AudioAnalyzer } from "./services/audioService";
 import { PlantMusicService } from "./services/plantMusicService";
-import { aiService } from "./services/aiServiceFactory";
+import { aiService } from "./services/ai";
 import { Web3Service } from "./services/web3Service";
 import { StorageService } from "./services/storageService";
 import PlantCanvas from "./components/PlantCanvas";

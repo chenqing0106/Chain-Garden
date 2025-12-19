@@ -1,5 +1,6 @@
-import { PlantDNA } from "../types";
+import { PlantDNA } from "../../types";
 import { AIService } from "./aiService.interface";
+import { buildTextAnalysisPrompt, buildImageAnalysisPrompt } from "./prompts";
 
 const apiKey = process.env.QWEN_API_KEY || process.env.API_KEY;
 
@@ -22,38 +23,7 @@ class QwenService implements AIService {
       throw new Error("API key not configured. Please set QWEN_API_KEY in your .env file in the root directory. See ENV_SETUP.md for details.");
     }
 
-    const prompt = `Analyze this user input: "${vibe}". It could be a mood, a name, a diary entry, or a random thought.
-
-1. Determine the emotional "Mood" (Happy, Melancholic, Mysterious, Aggressive, Calm).
-2. Determine the "Energy" level (0.0 = still/dead, 1.0 = chaotic/explosive).
-3. Generate a fictional plant based on these feelings using Risograph/Lo-Fi aesthetics.
-
-Architectures:
-- "fractal_tree": Stable, growth, history.
-- "organic_vine": Wandering, confused, flexible.
-- "radial_succulent": Focused, geometric, mandala.
-- "fern_frond": Mathematical, precise, repetitive.
-- "weeping_willow": Sad, heavy, gravity-bound.
-- "alien_shrub": Glitchy, weird, unexpected.
-- "crystal_cactus": Sharp, defensive, rigid.
-- "data_blossom": Data-visualization inspired, radial, typographic blooms.
-
-Return strictly JSON matching this schema:
-{
-  "speciesName": "string",
-  "description": "string",
-  "growthArchitecture": "fractal_tree" | "organic_vine" | "radial_succulent" | "fern_frond" | "weeping_willow" | "alien_shrub" | "crystal_cactus" | "data_blossom",
-  "branchingFactor": 0.5-0.95,
-  "angleVariance": 10-120,
-  "colorPalette": ["#hex1", "#hex2", "#hex3"],
-  "leafShape": "fern" | "round" | "needle" | "abstract" | "heart" | "crystal",
-  "leafArrangement": "alternate" | "opposite" | "whorled",
-  "growthSpeed": 0.5-2.5,
-  "mood": "happy" | "melancholic" | "mysterious" | "aggressive" | "calm",
-  "energy": 0.0-1.0
-}
-
-Important: Return ONLY valid JSON, no markdown code blocks, no explanations.`;
+    const prompt = buildTextAnalysisPrompt(vibe, true);
 
     try {
       const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
@@ -142,44 +112,7 @@ Important: Return ONLY valid JSON, no markdown code blocks, no explanations.`;
     }
 
     const imageBase64 = await this.fileToBase64(imageFile);
-
-    const promptText = `分析这张图片并生成一个虚构植物的 DNA。
-
-${additionalPrompt ? `用户补充描述: "${additionalPrompt}"` : ''}
-
-请分析图片中的：
-1. **颜色**：主色调、色彩和谐度、饱和度
-2. **形状与形态**：有机 vs 几何、流动 vs 刚硬、图案
-3. **情绪与氛围**：情感基调（快乐、忧郁、神秘、激进、平静）
-4. **能量等级**：视觉能量从 0.0（静止/平和）到 1.0（混乱/动态）
-5. **质感与风格**：光滑、粗糙、抽象、写实
-
-基于你的分析，使用 Risograph/Lo-Fi 美学创建一个植物。
-
-架构类型说明：
-- "fractal_tree": 稳定、成长、历史感
-- "organic_vine": 游走、灵活、流动
-- "radial_succulent": 聚焦、几何、曼陀罗
-- "fern_frond": 数学、精确、重复
-- "weeping_willow": 悲伤、沉重、下垂
-- "alien_shrub": 故障、怪异、意外
-- "crystal_cactus": 尖锐、防御、棱角
-- "data_blossom": 数据可视化风格、放射状、字体花朵
-
-严格返回符合以下 schema 的 JSON，不要包含任何 markdown 代码块：
-{
-  "speciesName": "string",
-  "description": "string",
-  "growthArchitecture": "fractal_tree" | "organic_vine" | "radial_succulent" | "fern_frond" | "weeping_willow" | "alien_shrub" | "crystal_cactus" | "data_blossom",
-  "branchingFactor": 0.5-0.95,
-  "angleVariance": 10-120,
-  "colorPalette": ["#hex1", "#hex2", "#hex3"],
-  "leafShape": "fern" | "round" | "needle" | "abstract" | "heart" | "crystal",
-  "leafArrangement": "alternate" | "opposite" | "whorled",
-  "growthSpeed": 0.5-2.5,
-  "mood": "happy" | "melancholic" | "mysterious" | "aggressive" | "calm",
-  "energy": 0.0-1.0
-}`;
+    const promptText = buildImageAnalysisPrompt(additionalPrompt, true);
 
     try {
       const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
