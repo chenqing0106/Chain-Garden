@@ -28,7 +28,8 @@ import {
 } from "lucide-react";
 import { AudioAnalyzer } from "./services/audioService";
 import { PlantMusicService } from "./services/plantMusicService";
-import { generatePlantDNA } from "./services/aiServiceFactory";
+import { demoAudioService, DEMO_PRESETS, DemoPreset } from "./services/demoAudioService";
+import { aiService } from "./services/ai";
 import { Web3Service } from "./services/web3Service";
 import { StorageService } from "./services/storageService";
 import PlantCanvas from "./components/PlantCanvas";
@@ -83,10 +84,14 @@ const App: React.FC = () => {
   // Audio State
   const [analyzer, setAnalyzer] = useState<AudioSource | null>(null);
   const [inputMode, setInputMode] = useState<
-    "mic" | "file" | "reflection" | "none"
+    "mic" | "file" | "reflection" | "demo" | "none"
   >("none");
   const [isListening, setIsListening] = useState(false);
   const [isPlayingFile, setIsPlayingFile] = useState(false);
+  
+  // Demo Audio State
+  const [isDemoPlaying, setIsDemoPlaying] = useState(false);
+  const [currentDemoPreset, setCurrentDemoPreset] = useState<DemoPreset>("balanced_music");
 
   // Reflection State
   const [reflectionQuestion, setReflectionQuestion] = useState(
@@ -135,6 +140,11 @@ const App: React.FC = () => {
   );
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Image Upload State (for multimodal AI)
+  const [uploadedImage, setUploadedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   // Initial check for wallet and load collection
   useEffect(() => {
@@ -381,6 +391,12 @@ const App: React.FC = () => {
   const handleAudioInputToggle = async (
     mode: "mic" | "file" | "reflection",
   ) => {
+    // 如果当前是 demo 模式，先停止
+    if (isDemoPlaying) {
+      demoAudioService.stop();
+      setIsDemoPlaying(false);
+    }
+    
     if (isListening) {
       audioAnalyzerRef.current.cleanup();
       setIsListening(false);
@@ -419,6 +435,34 @@ const App: React.FC = () => {
           fileInputRef.current.click();
         }
       }, 0);
+    }
+  };
+
+  // DEMO AUDIO TOGGLE
+  const handleDemoToggle = (preset?: DemoPreset) => {
+    // 如果正在使用其他音频源，先停止
+    if (isListening) {
+      audioAnalyzerRef.current.cleanup();
+      setIsListening(false);
+      setIsPlayingFile(false);
+    }
+    
+    if (isDemoPlaying && !preset) {
+      // 停止 demo
+      demoAudioService.stop();
+      setIsDemoPlaying(false);
+      setInputMode("none");
+      setAnalyzer(null);
+    } else {
+      // 启动或切换 demo 预设
+      if (preset) {
+        setCurrentDemoPreset(preset);
+        demoAudioService.setPreset(preset);
+      }
+      demoAudioService.start();
+      setIsDemoPlaying(true);
+      setInputMode("demo");
+      setAnalyzer(demoAudioService);
     }
   };
 
@@ -523,17 +567,59 @@ const App: React.FC = () => {
     }
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image size must be less than 5MB");
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload a valid image file");
+      return;
+    }
+
+    setUploadedImage(file);
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const clearImage = () => {
+    setUploadedImage(null);
+    setImagePreview(null);
+    if (imageInputRef.current) {
+      imageInputRef.current.value = "";
+    }
+  };
+
   const handleGenerateDNA = async () => {
-    if (!prompt.trim()) return;
+    if (!prompt.trim() && !uploadedImage) return;
     setIsGenerating(true);
     try {
-      const newDna = await generatePlantDNA(prompt);
+      let newDna: PlantDNA;
+
+      if (uploadedImage) {
+        newDna = await aiService.generatePlantDNAFromImage(
+          uploadedImage,
+          prompt.trim() || undefined,
+        );
+      } else {
+        newDna = await aiService.generatePlantDNA(prompt);
+      }
+
       setDna(newDna);
       setIsManualMode(false);
       setLabState("SYNTHESIZED");
+      clearImage();
     } catch (e) {
       console.error(e);
-      alert("Failed to analyze vibe. Using cached seed.");
+      alert("Failed to analyze. Using cached seed.");
       setLabState("SYNTHESIZED");
     } finally {
       setIsGenerating(false);
@@ -723,7 +809,7 @@ const App: React.FC = () => {
   return (
     <div
       className="min-h-screen w-full flex flex-col md:flex-row bg-grain"
-      data-oid="vl6_162"
+      data-oid="8d-p:cl"
     >
       {/* MODALS */}
       <MintModal
@@ -733,7 +819,7 @@ const App: React.FC = () => {
         onConfirmMint={confirmMint}
         walletAddress={walletAddress || ""}
         isMinting={isMinting}
-        data-oid="5sidf1u"
+        data-oid="btb:8ol"
       />
 
       <SpecimenDetailModal
@@ -742,42 +828,42 @@ const App: React.FC = () => {
         onMint={handleStartMinting}
         onDelete={deleteSpecimen}
         walletConnected={!!walletAddress}
-        data-oid="yhmkne:"
+        data-oid=".055awa"
       />
 
       {/* LEFT PANEL: Swappable Interface */}
       <div
         className="w-full md:w-1/3 lg:w-1/4 p-6 border-r-2 border-riso-black bg-riso-paper z-10 flex flex-col gap-6 overflow-y-auto h-screen custom-scrollbar transition-all duration-500"
-        data-oid=":7iiz_-"
+        data-oid="cehf58a"
       >
         {/* Header */}
         <div
           className="border-b-4 border-double border-riso-black pb-4"
-          data-oid="v2a_lqd"
+          data-oid="5:pqi1c"
         >
           <h1
             className="text-4xl font-bold tracking-tighter text-riso-green uppercase break-words"
-            data-oid="dg.s8wo"
+            data-oid="camrpds"
           >
             Chain
-            <br data-oid="07-m.uc" />
+            <br data-oid="90--pla" />
             Garden
           </h1>
           <div
             className="flex justify-between items-end mt-2"
-            data-oid=".m:j7-s"
+            data-oid="p-57y3y"
           >
             <p
               className="text-xs font-mono text-riso-black/70"
-              data-oid="n9q4a:_"
+              data-oid="sh73sep"
             >
               LAB_OS v4.2
-              <br data-oid="pnadryg" />
+              <br data-oid="_fcxt7j" />
               STATUS: {isSinging ? "BROADCASTING" : labState}
             </p>
             <div
               className={`w-3 h-3 rounded-full animate-pulse ${isSinging ? "bg-riso-pink" : labState === "GROWING" ? "bg-riso-green" : "bg-gray-300"}`}
-              data-oid="3tv8c8q"
+              data-oid="kpz07:l"
             ></div>
           </div>
         </div>
@@ -787,17 +873,17 @@ const App: React.FC = () => {
           onClick={handleWalletButtonClick}
           className={`w-full py-2 px-3 border-2 border-black font-bold text-xs flex items-center justify-between group transition-all
             ${walletAddress ? "bg-riso-black text-white" : "bg-white text-black hover:bg-riso-blue hover:text-white"}`}
-          data-oid="618kt7r"
+          data-oid="0:mustl"
           title={walletAddress ? "点击重新连接或断开钱包" : "点击连接钱包"}
         >
-          <div className="flex items-center gap-2" data-oid="x0ilk8e">
-            <Wallet className="w-4 h-4" data-oid="_z26z-x" />
+          <div className="flex items-center gap-2" data-oid="_r_.ji-">
+            <Wallet className="w-4 h-4" data-oid="2.k:5mv" />
             {walletAddress ? "WALLET LINKED" : "CONNECT WALLET"}
           </div>
           {walletAddress && (
             <span
               className="font-mono text-[10px] opacity-70"
-              data-oid=".fbog30"
+              data-oid="jr0b8i:"
             >
               {web3ServiceRef.current.shortenAddress(walletAddress)}
             </span>
@@ -810,40 +896,40 @@ const App: React.FC = () => {
           /* VINYL / MUSIC MODE */
           <div
             className="flex-1 flex flex-col animate-in slide-in-from-right duration-300 space-y-6"
-            data-oid="lr4l28b"
+            data-oid="p_wu29o"
           >
             {/* Vinyl Display */}
             <div
               className="w-full aspect-square bg-white border-2 border-black rounded-full shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] relative flex items-center justify-center animate-[spin_4s_linear_infinite]"
-              data-oid="10tf0vr"
+              data-oid="-gzlw2n"
             >
               <div
                 className="absolute inset-0 rounded-full border-[12px] border-riso-black/10"
-                data-oid="xva7g5z"
+                data-oid="1qwst7j"
               ></div>
               <div
                 className="absolute inset-4 rounded-full border border-black/20"
-                data-oid="q6ka79e"
+                data-oid="8zlmx0k"
               ></div>
               <div
                 className="absolute inset-8 rounded-full border border-black/20"
-                data-oid="2iosf_:"
+                data-oid="d:d1f5t"
               ></div>
 
               {/* Label */}
               <div
                 className="w-24 h-24 bg-riso-pink rounded-full border-4 border-black flex flex-col items-center justify-center text-center p-2 z-10"
-                data-oid="16h9swv"
+                data-oid="9v.6dm:"
               >
                 <span
                   className="text-[8px] font-bold text-white leading-none mb-1"
-                  data-oid="hu6sj48"
+                  data-oid="ro:.r8r"
                 >
                   CHAIN RECORDS
                 </span>
                 <span
                   className="text-[6px] font-mono leading-none"
-                  data-oid="zx4z5dh"
+                  data-oid="x2_0sh5"
                 >
                   {dna.speciesName.slice(0, 15)}
                 </span>
@@ -853,63 +939,63 @@ const App: React.FC = () => {
             {/* Track Stats */}
             <div
               className="bg-white border-2 border-black p-4 space-y-2 font-mono text-xs shadow-md"
-              data-oid="kt.3c3j"
+              data-oid="z_yy11:"
             >
               <div
                 className="flex justify-between border-b border-black pb-1"
-                data-oid="8v6f8no"
+                data-oid="b3tmi.z"
               >
-                <span className="font-bold" data-oid="1yqi0xf">
+                <span className="font-bold" data-oid="vbei7vw">
                   MOOD:
                 </span>
-                <span className="uppercase text-riso-blue" data-oid="7szuuk2">
+                <span className="uppercase text-riso-blue" data-oid="eo57jiq">
                   {dna.mood}
                 </span>
               </div>
               <div
                 className="flex justify-between border-b border-black pb-1"
-                data-oid="jmx2tsq"
+                data-oid="70f.axa"
               >
-                <span className="font-bold" data-oid="x.grpdx">
+                <span className="font-bold" data-oid=":8mvqbz">
                   BPM:
                 </span>
-                <span data-oid="6cysg:y">
+                <span data-oid="8fgd14n">
                   {(60 + dna.growthSpeed * 40).toFixed(0)}
                 </span>
               </div>
-              <div className="flex justify-between" data-oid="erqfmtt">
-                <span className="font-bold" data-oid="o4cy:79">
+              <div className="flex justify-between" data-oid="6kyefoa">
+                <span className="font-bold" data-oid="_8:n2pv">
                   STRESS FX:
                 </span>
                 <div
                   className="w-20 h-4 bg-gray-200 border border-black"
-                  data-oid="knvfnp:"
+                  data-oid="njusizk"
                 >
                   <div
                     className="h-full bg-riso-pink transition-all"
                     style={{ width: `${bioState.stress * 100}%` }}
-                    data-oid="p00u4.z"
+                    data-oid="uw_e..j"
                   ></div>
                 </div>
               </div>
             </div>
 
             {/* Recording Controls */}
-            <div className="mt-auto space-y-2" data-oid="qhc51ow">
+            <div className="mt-auto space-y-2" data-oid="a.-2kbk">
               <button
                 onClick={toggleRecording}
                 className={`w-full py-4 font-bold border-2 border-black flex items-center justify-center gap-2 transition-all
                         ${isRecording ? "bg-red-500 text-white animate-pulse" : "bg-white text-black hover:bg-gray-100"}`}
-                data-oid="k6ca4ft"
+                data-oid="6pxw4sm"
               >
                 {isRecording ? (
                   <>
-                    <StopCircle className="w-5 h-5" data-oid="o.54cs5" /> STOP
+                    <StopCircle className="w-5 h-5" data-oid="yfdjsi9" /> STOP
                     RECORDING
                   </>
                 ) : (
                   <>
-                    <Disc className="w-5 h-5" data-oid="o3ct4b7" /> START
+                    <Disc className="w-5 h-5" data-oid="w.2xp9x" /> START
                     RECORDING
                   </>
                 )}
@@ -918,19 +1004,19 @@ const App: React.FC = () => {
               {recordedBlob && (
                 <div
                   className="flex items-center gap-2 p-2 bg-riso-green/20 border-2 border-riso-green text-xs font-bold text-riso-green animate-in fade-in"
-                  data-oid="zajkgdm"
+                  data-oid="bt1ms7:"
                 >
-                  <Check className="w-4 h-4" data-oid="rh:_u4y" />
+                  <Check className="w-4 h-4" data-oid="pxwl7yy" />
                   AUDIO BUFFERED. CLICK SAVE TO BIND.
                 </div>
               )}
 
               <div
                 className="text-[10px] text-center text-gray-500"
-                data-oid="hby0jlt"
+                data-oid="d2xuk8a"
               >
                 Stop to buffer audio. Then click the{" "}
-                <Save className="w-3 h-3 inline" data-oid="ci1945n" /> Icon to
+                <Save className="w-3 h-3 inline" data-oid="k5wpjc." /> Icon to
                 save with specimen.
               </div>
             </div>
@@ -941,28 +1027,28 @@ const App: React.FC = () => {
             {/* 1. SYNTHESIS */}
             <div
               className="space-y-4 animate-in slide-in-from-left duration-300"
-              data-oid="na.ufnp"
+              data-oid="2pxsojl"
             >
               <div
                 className="flex items-center justify-between"
-                data-oid="g4202bk"
+                data-oid="e5p_m7e"
               >
-                <div className="flex items-center gap-2" data-oid="y5p0ue-">
+                <div className="flex items-center gap-2" data-oid=".rlt-f1">
                   <TestTube
                     className="w-5 h-5 text-riso-green"
-                    data-oid="adn:vay"
+                    data-oid="lwwtx3m"
                   />
 
-                  <h2 className="font-bold text-lg" data-oid="nwy9ut-">
+                  <h2 className="font-bold text-lg" data-oid=".w6_6ax">
                     SYNTHESIS
                   </h2>
                 </div>
                 <button
                   onClick={() => setIsManualMode(!isManualMode)}
                   className={`p-1 border border-black ${isManualMode ? "bg-riso-blue text-white" : "bg-white"}`}
-                  data-oid="bd5o_u3"
+                  data-oid=":gb9vfq"
                 >
-                  <Sliders className="w-4 h-4" data-oid="cyzi-cl" />
+                  <Sliders className="w-4 h-4" data-oid="va1rf.x" />
                 </button>
               </div>
 
@@ -974,22 +1060,80 @@ const App: React.FC = () => {
                       onChange={(e) => setPrompt(e.target.value)}
                       placeholder="Describe the vibe to synthesize DNA..."
                       className="w-full h-24 p-3 font-mono text-sm bg-gray-50 border-2 border-riso-black focus:outline-none focus:ring-2 focus:ring-riso-blue resize-none"
-                      data-oid="u8y_k2e"
+                      data-oid="lne4-s4"
                     />
+
+                    <div className="space-y-2" data-oid="uteilqz">
+                      <div
+                        className="text-xs font-mono text-gray-600 text-center"
+                        data-oid="jo5n1:b"
+                      >
+                        OR UPLOAD AN IMAGE
+                      </div>
+
+                      <input
+                        ref={imageInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                        data-oid="s3n4d5a"
+                      />
+
+                      <button
+                        onClick={() => imageInputRef.current?.click()}
+                        className="w-full py-2 px-3 border-2 border-riso-black bg-white hover:bg-riso-blue hover:text-white font-bold text-sm flex items-center justify-center gap-2 transition-colors"
+                        data-oid="p0d6zcq"
+                      >
+                        <Upload className="w-4 h-4" data-oid="7fabnol" />
+
+                        {uploadedImage ? "CHANGE IMAGE" : "UPLOAD IMAGE"}
+                      </button>
+
+                      {imagePreview && (
+                        <div
+                          className="relative border-2 border-riso-black p-2 bg-white"
+                          data-oid="rdk554m"
+                        >
+                          <img
+                            src={imagePreview}
+                            alt="Preview"
+                            className="w-full h-32 object-cover"
+                            data-oid="7e0pb:n"
+                          />
+
+                          <button
+                            onClick={clearImage}
+                            className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                            data-oid="si8hwrp"
+                          >
+                            <XCircle className="w-4 h-4" data-oid="j.fyv4e" />
+                          </button>
+                          {prompt && (
+                            <div
+                              className="mt-2 text-xs font-mono text-gray-600"
+                              data-oid="w-b:l3a"
+                            >
+                              Additional context: {prompt}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
 
                     <button
                       onClick={handleGenerateDNA}
-                      disabled={isGenerating || !prompt}
-                      className="w-full py-3 bg-riso-black text-white font-bold border-2 border-transparent hover:bg-riso-green hover:border-black hover:text-black flex items-center justify-center gap-2"
-                      data-oid="eq3fggs"
+                      disabled={isGenerating || (!prompt && !uploadedImage)}
+                      className="w-full py-3 bg-riso-black text-white font-bold border-2 border-transparent hover:bg-riso-green hover:border-black hover:text-black flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      data-oid="eu93a4x"
                     >
                       {isGenerating ? (
                         <RefreshCw
                           className="animate-spin w-4 h-4"
-                          data-oid="hmzowsj"
+                          data-oid="io1:bjn"
                         />
                       ) : (
-                        <Leaf className="w-4 h-4" data-oid="phrhaz9" />
+                        <Leaf className="w-4 h-4" data-oid="gcclb4u" />
                       )}
                       {isGenerating ? "SYNTHESIZING..." : "INITIATE GROWTH"}
                     </button>
@@ -997,10 +1141,10 @@ const App: React.FC = () => {
                 ) : (
                   <div
                     className="bg-white border-2 border-riso-black p-3 space-y-3 text-xs"
-                    data-oid="6::_34s"
+                    data-oid=":c42whb"
                   >
-                    <div className="space-y-1" data-oid="7_d-nt4">
-                      <div className="font-bold" data-oid="h1i55fa">
+                    <div className="space-y-1" data-oid="dm8wd.p">
+                      <div className="font-bold" data-oid="l8qm3zw">
                         ARCHITECTURE
                       </div>
                       <select
@@ -1009,17 +1153,17 @@ const App: React.FC = () => {
                           handleDnaChange("growthArchitecture", e.target.value)
                         }
                         className="w-full p-1 border border-black font-mono"
-                        data-oid="pq-i7od"
+                        data-oid="4l.1lv."
                       >
                         {ARCHITECTURES.map((a) => (
-                          <option key={a} value={a} data-oid="n2flzvn">
+                          <option key={a} value={a} data-oid="twl66nm">
                             {a.toUpperCase()}
                           </option>
                         ))}
                       </select>
                     </div>
-                    <div className="space-y-1" data-oid="7rs03dd">
-                      <div className="font-bold" data-oid="holh6h1">
+                    <div className="space-y-1" data-oid="kv.-5lh">
+                      <div className="font-bold" data-oid="87khj4o">
                         MOOD
                       </div>
                       <select
@@ -1028,7 +1172,7 @@ const App: React.FC = () => {
                           handleDnaChange("mood", e.target.value)
                         }
                         className="w-full p-1 border border-black font-mono"
-                        data-oid="js3cr15"
+                        data-oid="y.ukx:p"
                       >
                         {[
                           "happy",
@@ -1037,17 +1181,17 @@ const App: React.FC = () => {
                           "aggressive",
                           "calm",
                         ].map((m) => (
-                          <option key={m} value={m} data-oid="3hn2kip">
+                          <option key={m} value={m} data-oid="rw.flg_">
                             {m.toUpperCase()}
                           </option>
                         ))}
                       </select>
                     </div>
-                    <div className="space-y-1" data-oid="dx07263">
-                      <div className="font-bold" data-oid="ry-iv-s">
+                    <div className="space-y-1" data-oid="he3bm4-">
+                      <div className="font-bold" data-oid="7mv9rsx">
                         PALETTE (STEM/LEAF/ACCENT)
                       </div>
-                      <div className="flex gap-2" data-oid="y-vj1:j">
+                      <div className="flex gap-2" data-oid="25-:gsc">
                         {dna.colorPalette.map((color, idx) => (
                           <input
                             key={idx}
@@ -1057,7 +1201,7 @@ const App: React.FC = () => {
                               handleColorChange(idx, e.target.value)
                             }
                             className="h-8 flex-1 border border-black p-0 bg-transparent cursor-pointer"
-                            data-oid="cc0_zfz"
+                            data-oid=".r:-vbt"
                           />
                         ))}
                       </div>
@@ -1065,7 +1209,7 @@ const App: React.FC = () => {
                     <button
                       onClick={() => setLabState("SYNTHESIZED")}
                       className="w-full py-2 bg-riso-blue text-white font-bold hover:bg-riso-black transition-colors"
-                      data-oid="5fuek.s"
+                      data-oid="jf9ton:"
                     >
                       GENERATE SEED
                     </button>
@@ -1074,18 +1218,18 @@ const App: React.FC = () => {
               ) : labState === "SYNTHESIZED" ? (
                 <div
                   className="p-4 bg-riso-yellow/20 border-2 border-riso-black space-y-4 animate-in slide-in-from-left"
-                  data-oid="_brx9kc"
+                  data-oid="qmt7m2n"
                 >
-                  <div className="text-center" data-oid="-qvax6_">
+                  <div className="text-center" data-oid="up29nwp">
                     <div
                       className="font-bold text-riso-black"
-                      data-oid="lfxhvnr"
+                      data-oid="tp5im63"
                     >
                       DNA SEQUENCE READY
                     </div>
                     <div
                       className="text-xs font-mono text-gray-600"
-                      data-oid="5q8vkgp"
+                      data-oid="0u89eha"
                     >
                       Review parameters before planting.
                     </div>
@@ -1093,61 +1237,61 @@ const App: React.FC = () => {
 
                   <div
                     className="text-xs space-y-1 border-t border-b border-black py-2"
-                    data-oid="ow-v1z5"
+                    data-oid="t6j72qq"
                   >
-                    <div className="flex justify-between" data-oid="02b0t_z">
-                      <span data-oid="ovjrl6z">SPECIES:</span>
-                      <span className="font-bold" data-oid="-a.rbt1">
+                    <div className="flex justify-between" data-oid="i5:87ls">
+                      <span data-oid="_v::ms5">SPECIES:</span>
+                      <span className="font-bold" data-oid="epb8gs_">
                         {dna.speciesName}
                       </span>
                     </div>
-                    <div className="flex justify-between" data-oid="mftzhgi">
-                      <span data-oid="m60nq-p">ARCH:</span>
-                      <span data-oid="4yaeyd3">{dna.growthArchitecture}</span>
+                    <div className="flex justify-between" data-oid="58.mgsn">
+                      <span data-oid="j0:6ed9">ARCH:</span>
+                      <span data-oid="k:w0s:m">{dna.growthArchitecture}</span>
                     </div>
-                    <div className="flex justify-between" data-oid="k5g8rcr">
-                      <span data-oid="er8v9ly">MOOD:</span>
+                    <div className="flex justify-between" data-oid="rpq.q8m">
+                      <span data-oid=":2jlon3">MOOD:</span>
                       <span
                         className="uppercase text-riso-pink"
-                        data-oid="ry1u9c-"
+                        data-oid="ilt:hq7"
                       >
                         {dna.mood}
                       </span>
                     </div>
                     <div
                       className="flex justify-between items-center pt-1"
-                      data-oid="bofrczb"
+                      data-oid="8n7tee1"
                     >
-                      <span data-oid="j8j71h7">PALETTE:</span>
-                      <div className="flex gap-1" data-oid="wz48_10">
+                      <span data-oid="q3z9ssb">PALETTE:</span>
+                      <div className="flex gap-1" data-oid="tvgh_hb">
                         {dna.colorPalette.map((c, i) => (
                           <div
                             key={i}
                             className="w-4 h-4 border border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
                             style={{ backgroundColor: c }}
                             title={c}
-                            data-oid="jjaefei"
+                            data-oid="n58izz9"
                           ></div>
                         ))}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex gap-2" data-oid="d8y-ent">
+                  <div className="flex gap-2" data-oid="h9-ko8:">
                     <button
                       onClick={discardSeed}
                       className="flex-1 py-2 border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-bold text-xs flex items-center justify-center"
-                      data-oid="20fhx31"
+                      data-oid="2omrpgt"
                     >
-                      <XCircle className="w-4 h-4 mr-1" data-oid="6qn.eyx" />{" "}
+                      <XCircle className="w-4 h-4 mr-1" data-oid="rgsjm:0" />{" "}
                       REJECT
                     </button>
                     <button
                       onClick={confirmGrowth}
                       className="flex-[2] py-2 bg-riso-black text-white hover:bg-riso-green font-bold text-xs flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-y-[2px] transition-all"
-                      data-oid="y73f7-f"
+                      data-oid="08feoov"
                     >
-                      <PlayCircle className="w-4 h-4 mr-1" data-oid="wwbnf9i" />{" "}
+                      <PlayCircle className="w-4 h-4 mr-1" data-oid="g4xgyg5" />{" "}
                       PLANT SEED
                     </button>
                   </div>
@@ -1155,11 +1299,11 @@ const App: React.FC = () => {
               ) : (
                 <div
                   className="p-4 bg-gray-100 border-2 border-riso-black text-center space-y-2"
-                  data-oid="ccpu809"
+                  data-oid="f936afe"
                 >
                   <div
                     className="animate-pulse font-bold text-riso-green"
-                    data-oid=".gcyh3r"
+                    data-oid="ujdag:4"
                   >
                     SPECIMEN ACTIVE
                   </div>
@@ -1167,45 +1311,45 @@ const App: React.FC = () => {
                   {/* DNA Stats in GROWING State */}
                   <div
                     className="text-xs space-y-1 border-t border-b border-black py-2 text-left"
-                    data-oid="mi867vi"
+                    data-oid="vc0.tsx"
                   >
-                    <div className="flex justify-between" data-oid=".4l9sx6">
-                      <span data-oid="imah74:">SPECIES:</span>
+                    <div className="flex justify-between" data-oid="pj4f0o6">
+                      <span data-oid="lps28sp">SPECIES:</span>
                       <span
                         className="font-bold truncate w-24 text-right"
-                        data-oid="dzky5yg"
+                        data-oid="jw0wt_o"
                       >
                         {dna.speciesName}
                       </span>
                     </div>
-                    <div className="flex justify-between" data-oid="6781.k0">
-                      <span data-oid="g:v-::w">ARCH:</span>
-                      <span data-oid="z0x-wkn">
+                    <div className="flex justify-between" data-oid="h14mi63">
+                      <span data-oid=":bplghg">ARCH:</span>
+                      <span data-oid="no3iun-">
                         {dna.growthArchitecture.replace("_", " ")}
                       </span>
                     </div>
-                    <div className="flex justify-between" data-oid="deeus5u">
-                      <span data-oid="ybr93n_">MOOD:</span>
+                    <div className="flex justify-between" data-oid="qg6_npt">
+                      <span data-oid="0jlt:gc">MOOD:</span>
                       <span
                         className="uppercase text-riso-pink"
-                        data-oid="rgkw_br"
+                        data-oid="3ci.k2e"
                       >
                         {dna.mood}
                       </span>
                     </div>
                     <div
                       className="flex justify-between items-center pt-1"
-                      data-oid="h6t_ugu"
+                      data-oid="ce7h5j5"
                     >
-                      <span data-oid="ecnpwtd">PALETTE:</span>
-                      <div className="flex gap-1" data-oid="8fh:_kf">
+                      <span data-oid="-a:m5zg">PALETTE:</span>
+                      <div className="flex gap-1" data-oid="cbzmq64">
                         {dna.colorPalette.map((c, i) => (
                           <div
                             key={i}
                             className="w-4 h-4 border border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
                             style={{ backgroundColor: c }}
                             title={c}
-                            data-oid="m3egj7l"
+                            data-oid="fnv822p"
                           ></div>
                         ))}
                       </div>
@@ -1215,9 +1359,9 @@ const App: React.FC = () => {
                   <button
                     onClick={handleCompost}
                     className="w-full py-2 border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-bold text-xs flex items-center justify-center gap-2"
-                    data-oid="or-c5v."
+                    data-oid="b_pknd8"
                   >
-                    <Trash2 className="w-3 h-3" data-oid="iiowct3" /> COMPOST
+                    <Trash2 className="w-3 h-3" data-oid="nal2-1h" /> COMPOST
                     (RESET)
                   </button>
                 </div>
@@ -1227,7 +1371,7 @@ const App: React.FC = () => {
             {/* 2. NUTRIENTS (SOURCE) */}
             <div
               className={`space-y-4 border-2 border-dashed border-riso-black p-4 bg-white transform -rotate-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${labState === "GROWING" ? "opacity-100" : "opacity-50 pointer-events-none"}`}
-              data-oid="tl3bchd"
+              data-oid="1t_p6uh"
             >
               <input
                 type="file"
@@ -1235,83 +1379,132 @@ const App: React.FC = () => {
                 onChange={handleFileSelect}
                 ref={fileInputRef}
                 className="hidden"
-                data-oid="v9mjvr1"
+                data-oid="3qpqiuy"
               />
 
               <div
                 className="flex items-center justify-between mb-2"
-                data-oid=":qp9ee2"
+                data-oid="1o6axp6"
               >
-                <div className="flex items-center gap-2" data-oid="o.4wzd_">
+                <div className="flex items-center gap-2" data-oid="iipl_13">
                   <Volume2
                     className="w-5 h-5 text-riso-blue"
-                    data-oid="6.t_kk5"
+                    data-oid="0v--aee"
                   />
 
                   <h2
                     className="font-bold text-lg underline decoration-wavy decoration-riso-pink"
-                    data-oid="h2jlwaa"
+                    data-oid="r7wbu8y"
                   >
                     NUTRIENTS
                   </h2>
                 </div>
                 <div
                   className="flex gap-1 text-[10px] font-bold"
-                  data-oid="tfsd.qi"
+                  data-oid="zto4:bi"
                 >
+                  <button
+                    onClick={() => handleDemoToggle()}
+                    className={`px-1 py-1 border border-black ${inputMode === "demo" ? "bg-riso-pink text-white" : "hover:bg-gray-100"}`}
+                  >
+                    DEMO
+                  </button>
                   <button
                     onClick={() => handleAudioInputToggle("mic")}
                     className={`px-1 py-1 border border-black ${inputMode === "mic" ? "bg-riso-black text-white" : "hover:bg-gray-100"}`}
-                    data-oid="ckrg08g"
+                    data-oid="nb53r28"
                   >
                     MIC
                   </button>
                   <button
                     onClick={() => handleAudioInputToggle("file")}
                     className={`px-1 py-1 border border-black ${inputMode === "file" ? "bg-riso-black text-white" : "hover:bg-gray-100"}`}
-                    data-oid="llg34dd"
+                    data-oid="1.ry3v5"
                   >
                     FILE
                   </button>
                   <button
                     onClick={() => handleAudioInputToggle("reflection")}
                     className={`px-1 py-1 border border-black ${inputMode === "reflection" ? "bg-riso-black text-white" : "hover:bg-gray-100"}`}
-                    data-oid="9h1r1sg"
+                    data-oid="i0fs:7p"
                   >
                     VOICE
                   </button>
                 </div>
               </div>
 
-              {inputMode === "reflection" ? (
-                <div className="space-y-3" data-oid="gjvc21s">
+              {inputMode === "demo" ? (
+                <div className="space-y-3">
+                  <div className="text-[10px] font-mono mb-2 text-gray-500">
+                    选择预设音效模式，观察植物对不同频率的反应
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(Object.keys(DEMO_PRESETS) as DemoPreset[]).map((preset) => (
+                      <button
+                        key={preset}
+                        onClick={() => handleDemoToggle(preset)}
+                        className={`p-2 border-2 border-black text-left transition-all ${
+                          currentDemoPreset === preset && isDemoPlaying
+                            ? "bg-riso-pink text-white shadow-none translate-y-1"
+                            : "bg-white hover:bg-gray-100 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px]"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">{DEMO_PRESETS[preset].icon}</span>
+                          <div>
+                            <div className="font-bold text-xs">{DEMO_PRESETS[preset].name}</div>
+                            <div className="text-[9px] opacity-70 leading-tight">{DEMO_PRESETS[preset].description}</div>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  {isDemoPlaying && (
+                    <div className="flex items-center justify-center gap-2 py-2 bg-riso-yellow/30 border border-black">
+                      <Activity className="w-4 h-4 animate-pulse text-riso-pink" />
+                      <span className="text-xs font-bold">正在播放: {DEMO_PRESETS[currentDemoPreset].name}</span>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => handleDemoToggle()}
+                    className={`w-full py-2 font-bold border-2 border-black transition-all ${
+                      isDemoPlaying
+                        ? "bg-riso-black text-white"
+                        : "bg-riso-yellow hover:bg-yellow-300"
+                    }`}
+                  >
+                    {isDemoPlaying ? "⏹ 停止演示" : "▶ 开始演示"}
+                  </button>
+                </div>
+              ) : inputMode === "reflection" ? (
+                <div className="space-y-3" data-oid="67an5k_">
                   <div
                     className="bg-riso-yellow/30 p-3 border-2 border-riso-black relative"
-                    data-oid="5-kfq2o"
+                    data-oid="ez6:mbk"
                   >
                     <MessageCircle
                       className="absolute -top-2 -right-2 bg-white border border-black p-1 w-6 h-6"
-                      data-oid="-ul:3ig"
+                      data-oid="unl0xz_"
                     />
 
                     <div
                       className="text-[10px] font-bold text-gray-500 mb-1"
-                      data-oid="48lzbbg"
+                      data-oid="9:z0k2i"
                     >
                       SELF-EXPLORATION QUERY:
                     </div>
                     <p
                       className="font-mono text-sm font-bold leading-tight"
-                      data-oid="0q94qif"
+                      data-oid="psz8_0q"
                     >
                       {reflectionQuestion}
                     </p>
                     <button
                       onClick={cycleQuestion}
                       className="absolute bottom-1 right-1 p-1 hover:bg-black/10 rounded-full"
-                      data-oid="hr1.e06"
+                      data-oid="dq9z6hj"
                     >
-                      <RefreshCcw className="w-3 h-3" data-oid="a4-1coz" />
+                      <RefreshCcw className="w-3 h-3" data-oid="a_zq90y" />
                     </button>
                   </div>
 
@@ -1319,43 +1512,43 @@ const App: React.FC = () => {
                     onClick={toggleReflectionRecording}
                     className={`w-full py-3 px-4 font-bold border-2 border-riso-black transition-all flex items-center justify-center gap-2
                              ${isRecordingReflection ? "bg-red-500 text-white animate-pulse" : "bg-white hover:bg-gray-100"}`}
-                    data-oid="04oj704"
+                    data-oid="ten:s-x"
                   >
                     {isRecordingReflection ? (
                       <>
-                        <StopCircle data-oid="ki06gud" /> STOP RECORDING
+                        <StopCircle data-oid="984_.qd" /> STOP RECORDING
                       </>
                     ) : (
                       <>
-                        <Mic2 data-oid=":7ovrcn" /> HOLD TO ANSWER
+                        <Mic2 data-oid=":2w34r7" /> HOLD TO ANSWER
                       </>
                     )}
                   </button>
 
                   {reflectionBlob && !isRecordingReflection && (
-                    <div className="flex gap-2 mt-2" data-oid="etopw5p">
+                    <div className="flex gap-2 mt-2" data-oid="fg8xxd8">
                       <div
                         className="flex-1 text-center text-xs font-bold text-riso-green flex items-center justify-center gap-1 border border-riso-green bg-green-50 p-2"
-                        data-oid="unq-fq0"
+                        data-oid="6.99gzo"
                       >
-                        <Check className="w-3 h-3" data-oid="byo9yfz" />{" "}
+                        <Check className="w-3 h-3" data-oid="kf7vx3x" />{" "}
                         CAPTURED
                       </div>
                       <button
                         onClick={discardReflection}
                         className="px-3 border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-colors"
                         title="Discard Recording"
-                        data-oid="_o.plja"
+                        data-oid="j8:oe2h"
                       >
-                        <Trash2 className="w-4 h-4" data-oid="cz_1ae6" />
+                        <Trash2 className="w-4 h-4" data-oid="b33rcyn" />
                       </button>
                     </div>
                   )}
                   <div
                     className="text-[9px] text-gray-500 text-center leading-tight"
-                    data-oid="nt:c2hz"
+                    data-oid="1m6n_ug"
                   >
-                    Your voice shapes the structure. <br data-oid="ba7l_de" />
+                    Your voice shapes the structure. <br data-oid="nqc80x3" />
                     Save specimen to keep this recording.
                   </div>
                 </div>
@@ -1363,7 +1556,7 @@ const App: React.FC = () => {
                 <>
                   <div
                     className="text-[10px] font-mono mb-2 text-gray-500"
-                    data-oid="jkk1h-z"
+                    data-oid="us4713l"
                   >
                     {inputMode === "none"
                       ? "SELECT SOURCE TO FEED PLANT"
@@ -1377,47 +1570,47 @@ const App: React.FC = () => {
                               ? "bg-riso-pink text-white shadow-none translate-y-1"
                               : "bg-riso-yellow hover:bg-yellow-300 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px]"
                           }`}
-                    data-oid="_yat_pv"
+                    data-oid="u6ywtzw"
                   >
                     {inputMode === "mic" && isListening ? (
                       <>
-                        <Disc className="animate-spin" data-oid="5igyg02" />{" "}
+                        <Disc className="animate-spin" data-oid="iymau1j" />{" "}
                         HALT STREAM
                       </>
                     ) : (
                       <>
-                        <Mic data-oid="r3xb09f" /> OPEN MIC
+                        <Mic data-oid="xftvmc_" /> OPEN MIC
                       </>
                     )}
                   </button>
                 </>
               ) : (
-                <div className="space-y-2" data-oid="hj.cjz1">
+                <div className="space-y-2" data-oid="p1afup:">
                   <div
                     className="text-[10px] font-mono mb-2 text-gray-500"
-                    data-oid="hp_dmiw"
+                    data-oid="rfr6gtl"
                   >
                     PLAY MP3 TO STIMULATE GROWTH
                   </div>
-                  <div className="flex gap-2" data-oid="l5sdn0y">
+                  <div className="flex gap-2" data-oid="hw69iyy">
                     <button
                       onClick={() => fileInputRef.current?.click()}
                       className="flex-1 py-2 px-2 border-2 border-riso-black bg-white hover:bg-gray-50 font-mono text-xs flex items-center justify-center gap-1"
-                      data-oid="9q8dx2d"
+                      data-oid="dpljk1i"
                     >
-                      <Upload className="w-4 h-4" data-oid="lp6km5n" />{" "}
+                      <Upload className="w-4 h-4" data-oid="6-m6fs8" />{" "}
                       {analyzer && isListening ? "REPLACE MP3" : "LOAD MP3"}
                     </button>
                     {isListening && analyzer && (
                       <button
                         onClick={toggleFilePlayback}
                         className="w-12 border-2 border-riso-black bg-riso-yellow flex items-center justify-center hover:bg-yellow-300"
-                        data-oid="d.q9llk"
+                        data-oid="r5cclll"
                       >
                         {isPlayingFile ? (
-                          <Pause className="w-4 h-4" data-oid="ywn:c1u" />
+                          <Pause className="w-4 h-4" data-oid="9d4d-n5" />
                         ) : (
-                          <Play className="w-4 h-4" data-oid="s3i2.-q" />
+                          <Play className="w-4 h-4" data-oid="b0ade6m" />
                         )}
                       </button>
                     )}
@@ -1427,14 +1620,14 @@ const App: React.FC = () => {
 
               <div
                 className="w-full h-12 bg-black border border-black mt-2"
-                data-oid="zfe9l3q"
+                data-oid=":qsquq:"
               >
                 <canvas
                   ref={visualizerCanvasRef}
                   className="w-full h-full block"
                   width={300}
                   height={50}
-                  data-oid="lfc.v.-"
+                  data-oid="d509lc9"
                 />
               </div>
             </div>
@@ -1445,12 +1638,12 @@ const App: React.FC = () => {
       {/* MIDDLE/RIGHT: Canvas Area */}
       <div
         className="flex-1 relative bg-riso-paper flex flex-col h-screen"
-        data-oid="9:yjrxh"
+        data-oid="ml-s8tx"
       >
         {/* Top Controls Toolbar */}
         <div
           className="absolute top-4 right-4 z-50 flex gap-2"
-          data-oid="y1m8uyg"
+          data-oid="xn3wq_d"
         >
           {/* 1. AUDIO MONITOR TOGGLE (Parallel Output) */}
           <button
@@ -1459,34 +1652,34 @@ const App: React.FC = () => {
             className={`p-3 border-2 border-riso-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-none transition-all
               ${labState !== "GROWING" ? "opacity-50 cursor-not-allowed bg-gray-200" : isSinging ? "bg-riso-pink text-white animate-pulse" : "bg-white hover:bg-gray-50"}`}
             title="Toggle Plant Voice (Monitor)"
-            data-oid="9:wj2h_"
+            data-oid="m_jtglz"
           >
             {isSinging ? (
-              <Activity className="w-6 h-6 animate-bounce" data-oid="mnbqjw0" />
+              <Activity className="w-6 h-6 animate-bounce" data-oid="w_rostq" />
             ) : (
-              <Music className="w-6 h-6" data-oid="xnorbtm" />
+              <Music className="w-6 h-6" data-oid="6du__66" />
             )}
           </button>
 
           {/* 2. SAVE BUTTON */}
-          <div className="relative" data-oid="ojbaedv">
+          <div className="relative" data-oid="s-hkei4">
             <button
               onClick={triggerSaveProcess}
               disabled={labState !== "GROWING"}
               className={`p-3 border-2 border-riso-black shadow-[4px_4px_0px_0px_#00a651] hover:translate-y-1 hover:shadow-none transition-all group relative
                 ${labState !== "GROWING" ? "opacity-50 cursor-not-allowed bg-gray-200" : "bg-white"}`}
               title="Archive Specimen"
-              data-oid="yrmfaaq"
+              data-oid="hbno0z2"
             >
               <Save
                 className={`w-6 h-6 ${labState === "GROWING" ? "text-riso-black group-hover:text-riso-green" : "text-gray-400"}`}
-                data-oid="xp4khf1"
+                data-oid=".4vnuzw"
               />
             </button>
             {lastSavedId && (
               <div
                 className="absolute top-full mt-2 right-0 bg-riso-green text-white text-xs font-bold px-2 py-1 whitespace-nowrap border border-black animate-bounce z-50"
-                data-oid="bo1dfr5"
+                data-oid="b-2y-uy"
               >
                 SAVED!
               </div>
@@ -1499,31 +1692,31 @@ const App: React.FC = () => {
             className={`p-3 border-2 border-riso-black shadow-[4px_4px_0px_0px_#0078bf] hover:translate-y-1 hover:shadow-none transition-all
             ${showGallery ? "bg-riso-blue text-white" : "bg-white text-riso-black"}`}
             title="View Collection"
-            data-oid="sqvdco:"
+            data-oid="0c--o0g"
           >
-            <Hash className="w-6 h-6" data-oid="xoyfu7_" />
+            <Hash className="w-6 h-6" data-oid="3pukdba" />
           </button>
         </div>
 
         {showGallery ? (
           <div
             className="w-full h-full px-8 pb-8 pt-24 overflow-y-auto bg-grain custom-scrollbar"
-            data-oid="d48sso-"
+            data-oid="tny_7a7"
           >
             <div
               className="flex flex-wrap justify-between items-end gap-4 mb-8 border-b-2 border-riso-green pb-2 md:pr-36"
-              data-oid="-n2hruq"
+              data-oid="rbzkz-v"
             >
-              <div data-oid="2m.dn6-">
+              <div data-oid="j-lqq35">
                 <h2
                   className="text-3xl font-bold text-riso-black uppercase tracking-tighter"
-                  data-oid="93df-9o"
+                  data-oid="4xpp3v_"
                 >
                   Herbarium Gallery
                 </h2>
                 <p
                   className="text-xs font-mono text-gray-500"
-                  data-oid="dyzcdur"
+                  data-oid="ac1exf3"
                 >
                   CLICK SPECIMEN FOR DETAILS & DNA
                 </p>
@@ -1532,9 +1725,9 @@ const App: React.FC = () => {
                 <button
                   onClick={clearCollection}
                   className="flex items-center gap-1 text-red-500 text-xs font-bold hover:underline bg-white px-2 py-1 border border-transparent hover:border-red-500 transition-colors"
-                  data-oid="yflcm23"
+                  data-oid="hfeqmht"
                 >
-                  <Trash2 className="w-4 h-4" data-oid="5y55icj" /> BURN ALL
+                  <Trash2 className="w-4 h-4" data-oid="dq3odk6" /> BURN ALL
                 </button>
               )}
             </div>
@@ -1542,84 +1735,84 @@ const App: React.FC = () => {
             {collection.length === 0 && (
               <div
                 className="text-center mt-20 opacity-50 font-mono"
-                data-oid="m:sc4o7"
+                data-oid="3zjw1-m"
               >
-                <Eye className="w-12 h-12 mx-auto mb-4" data-oid="iu_8m9g" />
-                <p data-oid="7rv98ii">No specimens collected yet.</p>
-                <p className="text-xs mt-2" data-oid="15gfc4c">
+                <Eye className="w-12 h-12 mx-auto mb-4" data-oid="9rg_eis" />
+                <p data-oid="zajrp4v">No specimens collected yet.</p>
+                <p className="text-xs mt-2" data-oid="f.m4vlb">
                   Return to lab to generate and save.
                 </p>
               </div>
             )}
             <div
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 pb-20"
-              data-oid="19tb0v6"
+              data-oid="avixf-u"
             >
               {collection.map((specimen) => (
                 <div
                   key={specimen.id}
                   onClick={() => setSelectedSpecimen(specimen)}
                   className="bg-white p-2 border-2 border-riso-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] rotate-1 hover:rotate-0 hover:translate-y-1 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer group"
-                  data-oid=".-7n1_a"
+                  data-oid=":clcxv_"
                 >
                   <div
                     className="relative overflow-hidden border border-black"
-                    data-oid="u-82f2_"
+                    data-oid="arzpwk5"
                   >
                     <img
                       src={specimen.imageData}
                       alt={specimen.dna.speciesName}
                       className="w-full h-48 object-cover mix-blend-multiply"
-                      data-oid="xdtethm"
+                      data-oid="4:j3_db"
                     />
                   </div>
                   <div
                     className="p-3 font-mono text-xs border-t-2 border-dashed border-gray-300 mt-2 bg-gray-50"
-                    data-oid="pq2k:k5"
+                    data-oid="w7_tkah"
                   >
                     <div
                       className="flex justify-between items-center mb-1"
-                      data-oid="d6znq:9"
+                      data-oid="4:wm7rx"
                     >
                       <p
                         className="font-bold text-sm text-riso-black truncate w-2/3"
-                        data-oid="gobqxzx"
+                        data-oid="kl-eqbx"
                       >
                         {specimen.dna.speciesName}
                       </p>
                       {specimen.txHash ? (
                         <Hash
                           className="w-3 h-3 text-riso-green"
-                          data-oid="f4ap2ft"
+                          data-oid="auzcb:4"
                         />
                       ) : (
                         <span
                           className="w-2 h-2 rounded-full bg-gray-300"
-                          data-oid="xl-za-a"
+                          data-oid="b2qo9qm"
                         ></span>
                       )}
                       {specimen.audioData && (
                         <Music
                           className="w-3 h-3 text-riso-pink ml-1"
-                          data-oid="tsg_8dm"
+                          data-oid="butpxe5"
                         />
                       )}
                       {specimen.reflectionAudioData && (
                         <MessageCircle
                           className="w-3 h-3 text-riso-blue ml-1"
-                          data-oid="dkio371"
+                          data-oid="uza:ehz"
                         />
                       )}
                     </div>
                     <p
                       className="text-gray-500 italic truncate"
-                      data-oid="4mslvs-"
+                      data-oid="h7t.jm3"
                     >
                       "{specimen.prompt}"
                     </p>
                     <p
                       className="text-riso-green mt-1 text-[10px]"
-                      data-oid="0wxevbr"
+                      data-oid="1fd1lw_"
                     >
                       {new Date(specimen.timestamp).toLocaleDateString()}
                     </p>
@@ -1631,12 +1824,12 @@ const App: React.FC = () => {
         ) : (
           <div
             className="w-full h-full relative p-12 flex items-end justify-center"
-            data-oid="z4tsbdj"
+            data-oid="78_3y2x"
           >
             {/* The Stage */}
             <div
               className="w-full h-full border-4 border-black relative bg-white/50 backdrop-blur-sm shadow-[10px_10px_0px_0px_rgba(0,0,0,0.1)]"
-              data-oid="8buht7a"
+              data-oid="l-q_noo"
             >
               <PlantCanvas
                 analyzer={analyzer}
@@ -1645,13 +1838,13 @@ const App: React.FC = () => {
                 onBioUpdate={handleBioUpdate}
                 triggerSnapshot={triggerSnapshot}
                 onSnapshot={handleSnapshotCaptured}
-                data-oid="13nak39"
+                data-oid="avbq39z"
               />
 
               {isListening && labState === "GROWING" && (
                 <div
                   className="absolute inset-0 pointer-events-none opacity-10 bg-[linear-gradient(transparent_50%,rgba(0,166,81,0.25)_50%)] bg-[length:100%_4px]"
-                  data-oid="h2r_f6x"
+                  data-oid="6oq1-65"
                 />
               )}
             </div>
