@@ -12,12 +12,12 @@ export const CHAIN_OPTIONS: ChainOption[] = [
 
 // 模拟创作者名字
 const CREATOR_NAMES = [
-  'SoundWave.eth', 'MelodyMaker', 'BassDropper', 'VinylVibes', 
-  'CryptoBeats', 'ChainTunes', 'NFTMaestro', 'DigitalDJ'
+  'PlantWhisperer.eth', 'DigitalBotanist', 'SeedMaster', 'GreenThumb', 
+  'FloraCreator', 'ChainGardener', 'NFTBotanist', 'AudioFlora'
 ];
 
-// 音乐类型
-const GENRES = ['Electronic', 'Ambient', 'Lo-Fi', 'Experimental', 'Chill', 'Synthwave', 'Jazz', 'Classical'];
+// 植物类型分类
+const GENRES = ['Tree', 'Vine', 'Succulent', 'Fern', 'Willow', 'Exotic', 'Crystal', 'Data'];
 
 // 生成模拟的植物DNA
 function generateMockDNA(): PlantDNA {

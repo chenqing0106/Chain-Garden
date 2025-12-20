@@ -80,7 +80,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({
           <div className="flex items-center gap-3">
             <TrendingUp className="w-5 h-5" />
             <h2 className="font-bold font-mono text-lg tracking-widest">
-              PURCHASE_RIGHTS
+              COLLECT_SPECIMEN
             </h2>
           </div>
           <button
@@ -101,7 +101,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({
               </div>
               <div>
                 <h3 className="text-2xl font-bold text-riso-black mb-2">
-                  PURCHASE COMPLETE!
+                  SPECIMEN COLLECTED!
                 </h3>
                 <p className="text-sm text-gray-600 font-mono">
                   You now own {shares} shares of "{specimen.dna.speciesName}"
@@ -122,7 +122,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({
                 </div>
               </div>
               <p className="text-xs text-gray-500">
-                Royalties from this track will be distributed to your wallet proportionally.
+                You now have ownership rights to this botanical specimen and its associated assets.
               </p>
               <button
                 onClick={onClose}
@@ -324,8 +324,8 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({
 
                 {/* Info */}
                 <div className="text-[10px] text-gray-500 text-center space-y-1">
-                  <p>By purchasing, you acquire royalty rights to this music NFT.</p>
-                  <p>Revenue will be distributed proportionally to all shareholders.</p>
+                  <p>By collecting, you acquire ownership shares of this botanical specimen.</p>
+                  <p>Includes access to DNA, visuals, and any attached music/voice recordings.</p>
                 </div>
               </div>
             </div>

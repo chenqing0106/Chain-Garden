@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Users, TrendingUp, Music, Zap } from 'lucide-react';
+import { Leaf, Users, TrendingUp, Music, Zap, Dna, MessageCircle } from 'lucide-react';
 import { MarketListing } from '../types';
 
 interface MusicCardProps {
@@ -8,9 +8,13 @@ interface MusicCardProps {
 }
 
 const MusicCard: React.FC<MusicCardProps> = ({ listing, onClick }) => {
-  const { specimen, creatorName, pricePerShare, totalShares, soldShares, genre, plays } = listing;
+  const { specimen, creatorName, pricePerShare, totalShares, soldShares, genre } = listing;
   const availableShares = totalShares - soldShares;
   const soldPercentage = (soldShares / totalShares) * 100;
+  
+  // 检查作品包含哪些内容
+  const hasMusic = !!specimen.audioData;
+  const hasVoice = !!specimen.reflectionAudioData;
   
   return (
     <div
@@ -27,24 +31,39 @@ const MusicCard: React.FC<MusicCardProps> = ({ listing, onClick }) => {
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
         
-        {/* 播放按钮覆盖层 */}
+        {/* 悬停覆盖层 */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
           <div className="w-12 h-12 rounded-full bg-white/90 border-2 border-black flex items-center justify-center
                           opacity-0 group-hover:opacity-100 transform scale-75 group-hover:scale-100 transition-all">
-            <Play className="w-5 h-5 text-riso-black ml-1" />
+            <Leaf className="w-5 h-5 text-riso-green" />
           </div>
         </div>
         
-        {/* 类型标签 */}
-        {genre && (
-          <div className="absolute top-2 left-2 bg-riso-blue text-white text-[10px] font-bold px-2 py-1 border border-black">
-            {genre}
-          </div>
-        )}
+        {/* 架构类型标签 */}
+        <div className="absolute top-2 left-2 bg-riso-green text-white text-[10px] font-bold px-2 py-1 border border-black uppercase">
+          {specimen.dna.growthArchitecture.replace('_', ' ')}
+        </div>
         
         {/* 心情标签 */}
         <div className="absolute top-2 right-2 bg-riso-pink text-white text-[10px] font-bold px-2 py-1 border border-black uppercase">
           {specimen.dna.mood}
+        </div>
+
+        {/* 内容指示器 */}
+        <div className="absolute bottom-2 right-2 flex gap-1">
+          <div className="bg-riso-black/80 text-white p-1 border border-white/30" title="Contains DNA">
+            <Dna className="w-3 h-3" />
+          </div>
+          {hasMusic && (
+            <div className="bg-riso-pink/90 text-white p-1 border border-white/30" title="Contains Music">
+              <Music className="w-3 h-3" />
+            </div>
+          )}
+          {hasVoice && (
+            <div className="bg-riso-blue/90 text-white p-1 border border-white/30" title="Contains Voice">
+              <MessageCircle className="w-3 h-3" />
+            </div>
+          )}
         </div>
       </div>
       
@@ -52,25 +71,34 @@ const MusicCard: React.FC<MusicCardProps> = ({ listing, onClick }) => {
       <div className="p-4 space-y-3">
         {/* 标题和创作者 */}
         <div>
-          <h3 className="font-bold text-sm text-riso-black truncate group-hover:text-riso-blue transition-colors">
+          <h3 className="font-bold text-sm text-riso-black truncate group-hover:text-riso-green transition-colors">
             {specimen.dna.speciesName}
           </h3>
           <p className="text-xs text-gray-500 font-mono truncate">
-            by {creatorName || 'Anonymous'}
+            by {creatorName || 'Anonymous Botanist'}
           </p>
+        </div>
+        
+        {/* DNA 特征 */}
+        <div className="flex flex-wrap gap-1">
+          <span className="bg-gray-100 text-gray-600 text-[9px] px-1.5 py-0.5 font-mono">
+            {specimen.dna.leafShape}
+          </span>
+          <span className="bg-gray-100 text-gray-600 text-[9px] px-1.5 py-0.5 font-mono">
+            E:{(specimen.dna.energy * 100).toFixed(0)}%
+          </span>
+          {genre && (
+            <span className="bg-riso-blue/10 text-riso-blue text-[9px] px-1.5 py-0.5 font-mono">
+              {genre}
+            </span>
+          )}
         </div>
         
         {/* 统计信息 */}
         <div className="flex items-center gap-3 text-[10px] text-gray-500">
-          {plays !== undefined && (
-            <span className="flex items-center gap-1">
-              <Music className="w-3 h-3" />
-              {plays} plays
-            </span>
-          )}
           <span className="flex items-center gap-1">
             <Users className="w-3 h-3" />
-            {soldShares} owners
+            {soldShares} collectors
           </span>
         </div>
         
@@ -88,7 +116,7 @@ const MusicCard: React.FC<MusicCardProps> = ({ listing, onClick }) => {
           <div className="space-y-1">
             <div className="flex justify-between text-[10px]">
               <span className="text-gray-500">{soldShares}/{totalShares} sold</span>
-              <span className="text-riso-blue font-bold">{availableShares} left</span>
+              <span className="text-riso-green font-bold">{availableShares} left</span>
             </div>
             <div className="h-2 bg-gray-200 border border-black overflow-hidden">
               <div 
@@ -106,7 +134,7 @@ const MusicCard: React.FC<MusicCardProps> = ({ listing, onClick }) => {
                      transition-all flex items-center justify-center gap-2"
         >
           <TrendingUp className="w-3 h-3" />
-          BUY SHARES
+          COLLECT SPECIMEN
         </button>
       </div>
     </div>
@@ -114,4 +142,3 @@ const MusicCard: React.FC<MusicCardProps> = ({ listing, onClick }) => {
 };
 
 export default MusicCard;
-

@@ -82,19 +82,19 @@ const Marketplace: React.FC<MarketplaceProps> = ({ onSelectListing, walletAddres
           <div className="flex items-center gap-3 mb-4">
             <Sparkles className="w-8 h-8 text-riso-green" />
             <h1 className="text-4xl font-bold tracking-tighter">
-              MUSIC RIGHTS MARKETPLACE
+              BOTANICAL SPECIMEN MARKETPLACE
             </h1>
           </div>
           <p className="text-gray-400 max-w-2xl mb-8 font-mono text-sm">
-            Discover and invest in music from creators worldwide. 
-            Purchase royalty shares with any chain asset powered by ZetaChain.
+            Discover unique digital plants generated from audio & emotions. 
+            Each specimen includes DNA, visuals, and optional music. Purchase shares with any chain asset.
           </p>
 
           {/* Stats */}
           <div className="grid grid-cols-3 gap-6 max-w-lg">
             <div className="border-l-2 border-riso-green pl-4">
               <div className="text-2xl font-bold text-riso-green">{totalListings}</div>
-              <div className="text-xs text-gray-500 font-mono">TRACKS</div>
+              <div className="text-xs text-gray-500 font-mono">SPECIMENS</div>
             </div>
             <div className="border-l-2 border-riso-pink pl-4">
               <div className="text-2xl font-bold text-riso-pink">{totalVolume.toFixed(2)}</div>
@@ -102,7 +102,7 @@ const Marketplace: React.FC<MarketplaceProps> = ({ onSelectListing, walletAddres
             </div>
             <div className="border-l-2 border-riso-blue pl-4">
               <div className="text-2xl font-bold text-riso-blue">{totalOwners}</div>
-              <div className="text-xs text-gray-500 font-mono">CREATORS</div>
+              <div className="text-xs text-gray-500 font-mono">BOTANISTS</div>
             </div>
           </div>
         </div>
@@ -119,13 +119,13 @@ const Marketplace: React.FC<MarketplaceProps> = ({ onSelectListing, walletAddres
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search tracks, artists, genres..."
+                placeholder="Search specimens, botanists, types..."
                 className="w-full pl-10 pr-4 py-2 border-2 border-black font-mono text-sm bg-white
                            focus:outline-none focus:ring-2 focus:ring-riso-blue"
               />
             </div>
 
-            {/* Genre Filter */}
+            {/* Type Filter */}
             <div className="relative">
               <select
                 value={selectedGenre}
@@ -133,7 +133,7 @@ const Marketplace: React.FC<MarketplaceProps> = ({ onSelectListing, walletAddres
                 className="appearance-none px-4 py-2 pr-8 border-2 border-black font-mono text-sm bg-white cursor-pointer
                            focus:outline-none focus:ring-2 focus:ring-riso-blue"
               >
-                <option value="All">All Genres</option>
+                <option value="All">All Types</option>
                 {GENRES.map(genre => (
                   <option key={genre} value={genre}>{genre}</option>
                 ))}
@@ -200,7 +200,7 @@ const Marketplace: React.FC<MarketplaceProps> = ({ onSelectListing, walletAddres
           {/* Results Header */}
           <div className="flex justify-between items-center mb-6">
             <div className="text-sm font-mono text-gray-500">
-              Showing {filteredListings.length} of {listings.length} tracks
+              Showing {filteredListings.length} of {listings.length} specimens
             </div>
           </div>
 
@@ -273,7 +273,7 @@ const Marketplace: React.FC<MarketplaceProps> = ({ onSelectListing, walletAddres
           {filteredListings.length === 0 && (
             <div className="text-center py-20">
               <Music className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-              <h3 className="text-lg font-bold text-gray-500 mb-2">No tracks found</h3>
+              <h3 className="text-lg font-bold text-gray-500 mb-2">No specimens found</h3>
               <p className="text-sm text-gray-400 font-mono">
                 Try adjusting your search or filters
               </p>
