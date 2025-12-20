@@ -25,6 +25,8 @@ import {
   MessageCircle,
   Mic2,
   RefreshCcw,
+  Store,
+  ShoppingCart,
 } from "lucide-react";
 import { AudioAnalyzer } from "./services/audioService";
 import { PlantMusicService } from "./services/plantMusicService";
@@ -32,10 +34,13 @@ import { demoAudioService, DEMO_PRESETS, DemoPreset } from "./services/demoAudio
 import { aiService } from "./services/ai";
 import { Web3Service } from "./services/web3Service";
 import { StorageService } from "./services/storageService";
+import { marketService } from "./services/marketService";
 import PlantCanvas from "./components/PlantCanvas";
-import MintModal, { AssetSelection } from "./components/MintModal";
+import MintModal, { AssetSelection, ListingOptions } from "./components/MintModal";
 import SpecimenDetailModal from "./components/SpecimenDetailModal";
-import { PlantDNA, Specimen, AudioSource, LabState, BioState } from "./types";
+import Marketplace from "./components/Marketplace";
+import PurchaseModal from "./components/PurchaseModal";
+import { PlantDNA, Specimen, AudioSource, LabState, BioState, MarketListing } from "./types";
 import { uploadSpecimenToIPFS } from "./services/ipfsService";
 
 // Default DNA if no Gemini
@@ -138,6 +143,12 @@ const App: React.FC = () => {
   const [selectedSpecimen, setSelectedSpecimen] = useState<Specimen | null>(
     null,
   );
+
+  // Marketplace State
+  const [showMarketplace, setShowMarketplace] = useState(false);
+  const [selectedListing, setSelectedListing] = useState<MarketListing | null>(null);
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const [isPurchasing, setIsPurchasing] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -670,7 +681,7 @@ const App: React.FC = () => {
     setShowMintModal(true);
   };
 
-  const confirmMint = async (selection: AssetSelection) => {
+  const confirmMint = async (selection: AssetSelection, listingOptions?: ListingOptions) => {
     if (!mintTargetSpecimen || !walletAddress) return;
     setIsMinting(true);
     try {
@@ -691,23 +702,60 @@ const App: React.FC = () => {
         uploadResult.metadata.uri,
       );
 
-      const updatedSpecimen = {
+      const updatedSpecimen: Specimen = {
         ...mintTargetSpecimen,
         txHash: result.txHash,
         tokenId: result.tokenId,
         owner: walletAddress,
+        isListed: listingOptions?.listOnMarket || false,
+        pricePerShare: listingOptions?.pricePerShare,
+        totalShares: listingOptions?.totalShares,
+        soldShares: 0,
       };
       StorageService.updateSpecimen(updatedSpecimen);
       const updatedCollection =
         StorageService.getWalletCollection(walletAddress);
       setCollection(updatedCollection);
       setMintTargetSpecimen(updatedSpecimen);
+
+      // 3. If listing on market, add to marketplace
+      if (listingOptions?.listOnMarket) {
+        marketService.listSpecimen(
+          updatedSpecimen,
+          listingOptions.pricePerShare,
+          listingOptions.totalShares,
+          walletAddress,
+          web3ServiceRef.current.shortenAddress(walletAddress)
+        );
+      }
     } catch (e) {
       console.error(e);
       alert("Minting failed.");
     } finally {
       setIsMinting(false);
     }
+  };
+
+  // 处理市场购买
+  const handlePurchase = async (listingId: string, shares: number, chain: string) => {
+    if (!walletAddress) return;
+    setIsPurchasing(true);
+    try {
+      await marketService.purchaseShares(listingId, shares, walletAddress, chain);
+      // 刷新列表
+      setSelectedListing(marketService.getListing(listingId) || null);
+    } catch (e: any) {
+      console.error(e);
+      alert(e.message || "Purchase failed");
+    } finally {
+      setIsPurchasing(false);
+    }
+  };
+
+  // 选择市场作品
+  const handleSelectListing = (listing: MarketListing) => {
+    setSelectedListing(listing);
+    setShowPurchaseModal(true);
   };
 
   const deleteSpecimen = (id: string) => {
@@ -746,6 +794,15 @@ const App: React.FC = () => {
         onDelete={deleteSpecimen}
         walletConnected={!!walletAddress}
         data-oid=".055awa"
+      />
+
+      <PurchaseModal
+        isOpen={showPurchaseModal}
+        onClose={() => { setShowPurchaseModal(false); setSelectedListing(null); }}
+        listing={selectedListing}
+        walletAddress={walletAddress}
+        onConnectWallet={connectWallet}
+        onPurchase={handlePurchase}
       />
 
       {/* LEFT PANEL: Swappable Interface */}
@@ -1604,17 +1661,32 @@ const App: React.FC = () => {
 
           {/* 3. GALLERY BUTTON */}
           <button
-            onClick={() => setShowGallery(!showGallery)}
+            onClick={() => { setShowGallery(!showGallery); setShowMarketplace(false); }}
             className={`p-3 border-2 border-riso-black shadow-[4px_4px_0px_0px_#0078bf] hover:translate-y-1 hover:shadow-none transition-all
             ${showGallery ? "bg-riso-blue text-white" : "bg-white text-riso-black"}`}
-            title="View Collection"
+            title="My Collection"
             data-oid="0c--o0g"
           >
             <Hash className="w-6 h-6" data-oid="3pukdba" />
           </button>
+
+          {/* 4. MARKETPLACE BUTTON */}
+          <button
+            onClick={() => { setShowMarketplace(!showMarketplace); setShowGallery(false); }}
+            className={`p-3 border-2 border-riso-black shadow-[4px_4px_0px_0px_#00a651] hover:translate-y-1 hover:shadow-none transition-all
+            ${showMarketplace ? "bg-riso-green text-white" : "bg-white text-riso-black"}`}
+            title="Marketplace"
+          >
+            <Store className="w-6 h-6" />
+          </button>
         </div>
 
-        {showGallery ? (
+        {showMarketplace ? (
+          <Marketplace
+            onSelectListing={handleSelectListing}
+            walletAddress={walletAddress}
+          />
+        ) : showGallery ? (
           <div
             className="w-full h-full px-8 pb-8 pt-24 overflow-y-auto bg-grain custom-scrollbar"
             data-oid="tny_7a7"
