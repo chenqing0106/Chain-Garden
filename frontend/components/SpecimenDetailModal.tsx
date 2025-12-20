@@ -275,7 +275,7 @@ const SpecimenDetailModal: React.FC<SpecimenDetailModalProps> = ({
               </div>
               {specimen.txHash && (
                 <a
-                  href={`https://sepolia.etherscan.io/tx/${specimen.txHash}`}
+                  href={`https://testnet.zetascan.com/tx/${specimen.txHash}`}
                   target="_blank"
                   className="text-[10px] text-riso-blue hover:underline block mt-1 truncate"
                   data-oid="j68xfxs"

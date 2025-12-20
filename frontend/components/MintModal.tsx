@@ -148,7 +148,17 @@ const MintModal: React.FC<MintModalProps> = ({
                 >
                   TRANSACTION HASH:
                 </span>
-                {specimen.txHash || "0x712..."}
+                {specimen.txHash ? (
+                  <a
+                    href={`https://testnet.zetascan.com/tx/${specimen.txHash}`}
+                    target="_blank"
+                    className="text-riso-blue hover:underline break-all"
+                  >
+                    {specimen.txHash}
+                  </a>
+                ) : (
+                  "0x712..."
+                )}
               </div>
               <button
                 onClick={onClose}

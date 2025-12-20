@@ -80,7 +80,7 @@ contract EVMUniversalNFT is
     function safeMint(
         address to,
         string memory metadataURI
-    ) public payable onlyOwner whenNotPaused {
+    ) public payable whenNotPaused {
         require(msg.value >= mintPrice, "Insufficient payment");
         
         if (maxSupply > 0) {
