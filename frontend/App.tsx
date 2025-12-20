@@ -230,7 +230,7 @@ const App: React.FC = () => {
       }
 
       setWalletAddress(addr);
-      await web3ServiceRef.current.switchNetworkToSepolia();
+      await web3ServiceRef.current.switchNetworkToZetaChain();
 
       // Transfer anonymous specimens to wallet
       StorageService.transferAnonymousToWallet(addr);
@@ -270,6 +270,89 @@ const App: React.FC = () => {
       else {
         alert("连接失败: " + msg);
       }
+    }
+  };
+
+  const disconnectWallet = () => {
+    web3ServiceRef.current.disconnectWallet();
+    setWalletAddress(null);
+    
+    // Load anonymous collection after disconnection
+    const anonCollection = StorageService.getWalletCollection(null);
+    setCollection(anonCollection);
+    
+    console.log("Wallet disconnected");
+  };
+
+  const reconnectWallet = async () => {
+    try {
+      // First disconnect
+      disconnectWallet();
+      
+      // Wait a bit for cleanup and MetaMask to process disconnection
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Then reconnect with force flag to clear any pending requests
+      const addr = await web3ServiceRef.current.connectWallet(false, true);
+
+      if (!addr) {
+        console.log("No wallet address returned");
+        return;
+      }
+
+      setWalletAddress(addr);
+      await web3ServiceRef.current.switchNetworkToZetaChain();
+
+      // Transfer anonymous specimens to wallet
+      StorageService.transferAnonymousToWallet(addr);
+
+      // Reload collection with wallet data
+      const walletCollection = StorageService.getWalletCollection(addr);
+      setCollection(walletCollection);
+    } catch (e: any) {
+      console.error("Reconnection error:", e);
+      
+      // User rejected the request
+      if (e.code === 4001) {
+        console.log("User rejected wallet reconnection");
+        return;
+      }
+
+      // Request already pending - this should be handled better now
+      if (e.code === -32002 || e.message?.includes("待处理的连接请求")) {
+        alert(
+          "请检查 MetaMask - 已有待处理的连接请求。\n\n" +
+          "如果 MetaMask 中没有弹窗，请：\n" +
+          "1. 刷新页面后重试\n" +
+          "2. 或者在 MetaMask 中手动切换账户"
+        );
+        return;
+      }
+
+      const msg = e.message || "";
+      alert("重新连接失败: " + msg);
+    }
+  };
+
+  const handleWalletButtonClick = async () => {
+    if (walletAddress) {
+      // If already connected, show options
+      const action = confirm(
+        `当前已连接钱包：\n${walletAddress}\n\n` +
+        `点击"确定"重新连接（断开后重新连接）\n` +
+        `点击"取消"断开连接`
+      );
+      
+      if (action) {
+        // Reconnect
+        await reconnectWallet();
+      } else {
+        // Disconnect
+        disconnectWallet();
+      }
+    } else {
+      // Not connected, connect normally
+      await connectWallet();
     }
   };
 
@@ -699,12 +782,13 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Connect Wallet */}
+        {/* Connect/Disconnect Wallet */}
         <button
-          onClick={connectWallet}
+          onClick={handleWalletButtonClick}
           className={`w-full py-2 px-3 border-2 border-black font-bold text-xs flex items-center justify-between group transition-all
             ${walletAddress ? "bg-riso-black text-white" : "bg-white text-black hover:bg-riso-blue hover:text-white"}`}
           data-oid="618kt7r"
+          title={walletAddress ? "点击重新连接或断开钱包" : "点击连接钱包"}
         >
           <div className="flex items-center gap-2" data-oid="x0ilk8e">
             <Wallet className="w-4 h-4" data-oid="_z26z-x" />

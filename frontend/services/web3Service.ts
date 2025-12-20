@@ -725,8 +725,8 @@ const CHAIN_GARDEN_NFT_ABI = [
 ];
 
 
-// Placeholder Address (Sepolia Testnet) - Replace with your real contract address
-const CONTRACT_ADDRESS = "0xb02bedc80a8c49a97a0c9abf962dc7fcb60eb7ec"; 
+// Placeholder Address (Zetachain Testnet) - Replace with your real contract address
+const CONTRACT_ADDRESS = "0x9f1f04828383113e0AA95d7425ad8078Baa18F45"; 
 
 export class Web3Service {
   private provider: BrowserProvider | null = null;
@@ -760,20 +760,70 @@ export class Web3Service {
     this.pendingRequest = (async () => {
       try {
         // First try to get existing accounts (doesn't trigger popup)
+        // This is important - if accounts are already connected, use them
         let accounts = await this.provider!.send("eth_accounts", []);
         
+        // If we already have accounts, use them directly
+        if (accounts.length > 0) {
+          this.signer = await this.provider!.getSigner();
+          return accounts[0];
+        }
+        
         // If no accounts and not silent, request accounts (triggers popup)
-        if (accounts.length === 0 && !silent) {
-          try {
-            accounts = await this.provider!.send("eth_requestAccounts", []);
-          } catch (error: any) {
-            // Handle specific error codes
-            if (error.code === -32002) {
-              // Request already pending - wait and retry
-              console.warn("Connection request already pending, please check MetaMask");
-              throw new Error("Please check MetaMask - there's already a pending connection request");
+        if (!silent) {
+          // Try multiple times if we get -32002 error
+          let retryCount = 0;
+          const maxRetries = 3;
+          
+          while (retryCount < maxRetries && accounts.length === 0) {
+            try {
+              accounts = await this.provider!.send("eth_requestAccounts", []);
+              break; // Success, exit loop
+            } catch (error: any) {
+              // Handle specific error codes
+              if (error.code === -32002) {
+                retryCount++;
+                
+                if (retryCount >= maxRetries) {
+                  // After max retries, try to get accounts without requesting
+                  // Maybe user approved in MetaMask UI
+                  try {
+                    accounts = await this.provider!.send("eth_accounts", []);
+                    if (accounts.length > 0) {
+                      // User might have approved, we got accounts
+                      break;
+                    }
+                  } catch {
+                    // Still no accounts
+                  }
+                  
+                  // If still no accounts, throw a more helpful error
+                  throw new Error(
+                    "MetaMask 连接请求被阻止。\n\n" +
+                    "如果 MetaMask 中没有弹窗，请尝试：\n" +
+                    "1. 刷新页面\n" +
+                    "2. 在 MetaMask 中点击账户图标，查看是否有待处理的请求\n" +
+                    "3. 重启 MetaMask 扩展"
+                  );
+                }
+                
+                // Wait before retrying (increasing wait time)
+                await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+                
+                // Try to get accounts without requesting (maybe user approved)
+                try {
+                  accounts = await this.provider!.send("eth_accounts", []);
+                  if (accounts.length > 0) {
+                    break; // Got accounts, exit loop
+                  }
+                } catch {
+                  // Continue to retry
+                }
+              } else {
+                // Other errors, throw immediately
+                throw error;
+              }
             }
-            throw error;
           }
         }
         
@@ -784,7 +834,6 @@ export class Web3Service {
         
         return "";
       } catch (error) {
-        console.error("Connection error:", error);
         throw error;
       } finally {
         // Clear pending request after completion
@@ -801,6 +850,103 @@ export class Web3Service {
     return network.name;
   }
 
+  /**
+   * @dev Disconnect wallet by clearing provider and signer
+   */
+  disconnectWallet(): void {
+    this.provider = null;
+    this.signer = null;
+    this.pendingRequest = null;
+  }
+
+  /**
+   * @dev Check if wallet is currently connected
+   */
+  isConnected(): boolean {
+    return this.signer !== null && this.provider !== null;
+  }
+
+  /**
+   * @dev Get current wallet address if connected
+   */
+  async getCurrentAddress(): Promise<string | null> {
+    if (!this.signer) return null;
+    try {
+      return await this.signer.getAddress();
+    } catch {
+      return null;
+    }
+  }
+
+  async switchNetworkToZetaChain() {
+    const eth = (window as any).ethereum;
+    if (!eth) {
+      throw new Error("MetaMask not found");
+    }
+    
+    try {
+      // ZetaChain Athens Testnet Chain ID: 7001 (0x1b59)
+      await eth.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: '0x1b59' }], // ZetaChain Athens Testnet Chain ID
+      });
+      
+      // 等待网络切换完成
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // 重新创建 provider 和 signer 以确保使用新网络
+      this.provider = new BrowserProvider(eth);
+      
+      // 获取当前账户
+      const accounts = await eth.request({ method: 'eth_accounts' });
+      if (accounts.length > 0) {
+        this.signer = await this.provider.getSigner();
+      } else {
+        throw new Error("No accounts found. Please connect your wallet.");
+      }
+      
+      // 验证网络切换成功
+      const network = await this.provider.getNetwork();
+      if (network.chainId !== BigInt(7001)) {
+        throw new Error("Network switch failed. Please switch to ZetaChain Athens Testnet manually.");
+      }
+    } catch (error: any) {
+      // This error code indicates that the chain has not been added to MetaMask.
+      if (error.code === 4902) {
+        // Try to add ZetaChain network
+        try {
+          await eth.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: '0x1b59',
+              chainName: 'ZetaChain Athens Testnet',
+              nativeCurrency: {
+                name: 'ZETA',
+                symbol: 'ZETA',
+                decimals: 18
+              },
+              rpcUrls: ['https://zetachain-athens-evm.blockpi.network/v1/rpc/public'],
+              blockExplorerUrls: ['https://athens.explorer.zetachain.com/']
+            }]
+          });
+          
+          // 等待网络添加完成，并重新创建 provider 和 signer
+          await new Promise(resolve => setTimeout(resolve, 500));
+          this.provider = new BrowserProvider(eth);
+          const accounts = await eth.request({ method: 'eth_accounts' });
+          if (accounts.length > 0) {
+            this.signer = await this.provider.getSigner();
+          }
+        } catch (addError) {
+          throw new Error("Please add ZetaChain Athens Testnet to MetaMask manually");
+        }
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  // Keep old method for backward compatibility (if needed)
   async switchNetworkToSepolia() {
     if (!this.provider) return;
     try {
@@ -809,25 +955,32 @@ export class Web3Service {
         params: [{ chainId: '0xaa36a7' }], // Sepolia Chain ID
       });
     } catch (error: any) {
-      // This error code indicates that the chain has not been added to MetaMask.
-      if (error.code === 4902) {
-         console.warn("Sepolia not added to wallet");
-      }
+      // Sepolia not added to wallet - ignore
     }
   }
 
   // 获取铸造价格
-  async getMintPrice(): Promise<bigint> {
+  // 确保网络正确并返回合约实例
+  private async ensureNetworkAndGetContract(): Promise<Contract> {
     if (!this.signer) throw new Error("Wallet not connected");
     
-    try {
-      const contract = new Contract(CONTRACT_ADDRESS, CHAIN_GARDEN_NFT_ABI, this.signer);
-      const mintPrice = await contract.mintPrice();
-      return mintPrice;
-    } catch (error) {
-      console.error("Failed to get mint price:", error);
-      throw error;
+    // 检查网络是否正确
+    const network = await this.provider!.getNetwork();
+    const zetaChainId = BigInt(7001); // ZetaChain Athens Testnet Chain ID
+    
+    if (network.chainId !== zetaChainId) {
+      // 切换到正确的网络
+      await this.switchNetworkToZetaChain();
+      // switchNetworkToZetaChain 已经重新创建了 provider 和 signer
+      const newNetwork = await this.provider!.getNetwork();
+      if (newNetwork.chainId !== zetaChainId) {
+        throw new Error(`请确保 MetaMask 已连接到 ZetaChain Athens Testnet (Chain ID: 7001)`);
+      }
+      // 重新获取 signer
+      this.signer = await this.provider!.getSigner();
     }
+    
+    return new Contract(CONTRACT_ADDRESS, CHAIN_GARDEN_NFT_ABI, this.signer);
   }
 
   // 真实的 NFT 铸造函数
@@ -835,19 +988,44 @@ export class Web3Service {
     if (!this.signer) throw new Error("Wallet not connected");
 
     try {
-      // 1. 获取合约实例
+      // 1. 确保网络正确
+      await this.ensureNetworkAndGetContract();
+      
+      // 2. 确保使用最新的 signer 重新创建合约实例（重要：确保 signer 是最新的）
+      if (!this.provider || !this.signer) {
+        throw new Error("Wallet not connected");
+      }
+      
+      // 重新获取 signer 以确保是最新的
+      const currentSigner = await this.provider.getSigner();
+      this.signer = currentSigner;
+      
+      // 使用最新的 signer 创建合约实例
       const contract = new Contract(CONTRACT_ADDRESS, CHAIN_GARDEN_NFT_ABI, this.signer);
       
-      // 2. 获取铸造价格
-      const mintPrice = await contract.mintPrice();
+      // 3. 获取 mintPrice（如果失败则使用 0）
+      let mintPrice = 0n;
+      try {
+        mintPrice = await contract.mintPrice();
+      } catch (error: any) {
+        mintPrice = 0n;
+      }
       
-      // 3. 调用 mint 函数，传入元数据 URI 和价格
-      const tx = await contract.mint(metadataURI, { value: mintPrice });
+      // 4. 调用 mint 函数，传入元数据，触发 MetaMask 弹窗
+      // 使用 populateTransaction + sendTransaction 确保触发 MetaMask 弹窗
+      const populatedTx = await contract.mint.populateTransaction(metadataURI, { value: mintPrice });
       
-      // 4. 等待交易确认
+      // 使用 signer.sendTransaction 直接发送交易，这会触发 MetaMask 弹窗
+      const tx = await this.signer.sendTransaction({
+        to: CONTRACT_ADDRESS,
+        data: populatedTx.data,
+        value: mintPrice
+      });
+      
+      // 5. 等待交易确认
       const receipt = await tx.wait();
       
-      // 5. 从事件日志中获取 tokenId
+      // 6. 从事件日志中获取 tokenId
       // 合约会发出 PlantMinted 事件，我们可以从中获取 tokenId
       let tokenId = "";
       
@@ -880,13 +1058,43 @@ export class Web3Service {
         tokenId: tokenId
       };
     } catch (error: any) {
-      console.error("Minting failed:", error);
-      
       // 提供更友好的错误信息
-      if (error.reason) {
-        throw new Error(error.reason);
+      if (error.message && error.message.includes("Contract not found")) {
+        throw new Error(`合约地址不正确或合约未部署。请确认地址 ${CONTRACT_ADDRESS} 是否正确，并且合约已成功部署到 ZetaChain。`);
+      } else if (error.message && error.message.includes("execution reverted")) {
+        // 尝试从错误数据中提取信息
+        let errorMsg = "交易执行被回退";
+        if (error.data) {
+          try {
+            // 尝试解码常见的错误
+            const errorIface = new Interface([
+              "error InsufficientPayment()",
+              "error MaxSupplyReached()",
+            ]);
+            const decoded = errorIface.parseError(error.data);
+            errorMsg = `交易失败: ${decoded.name}`;
+          } catch (e) {
+            // 如果无法解码，检查是否是字符串错误
+            if (error.data.length > 2) {
+              errorMsg = `交易执行被回退。可能的原因：余额不足、达到最大供应量、或合约状态异常。请检查合约地址 ${CONTRACT_ADDRESS} 是否正确。`;
+            }
+          }
+        }
+        throw new Error(errorMsg);
+      } else if (error.reason) {
+        throw new Error(`交易失败: ${error.reason}`);
       } else if (error.message) {
-        throw new Error(error.message);
+        // 检查是否是常见的错误
+        if (error.message.includes("user rejected") || error.code === 4001) {
+          throw new Error("交易已被用户取消");
+        } else if (error.message.includes("insufficient funds") || error.message.includes("insufficient balance")) {
+          throw new Error("余额不足，请确保钱包中有足够的 ZETA 代币支付 gas 费用");
+        } else if (error.message.includes("nonce")) {
+          throw new Error("交易 nonce 错误，请稍后重试");
+        } else if (error.message.includes("missing revert data")) {
+          throw new Error(`交易被回退但没有返回错误信息。请检查：1) 合约地址 ${CONTRACT_ADDRESS} 是否正确 2) 合约是否已正确部署和初始化 3) 钱包中是否有足够的 ZETA 代币`);
+        }
+        throw new Error(`铸造失败: ${error.message}`);
       } else {
         throw new Error("NFT 铸造失败，请检查你的钱包余额和网络连接");
       }
