@@ -11,6 +11,9 @@ import {
   MessageCircle,
   Cpu,
   Lock,
+  Store,
+  Zap,
+  Users,
 } from "lucide-react";
 import { Specimen } from "../types";
 
@@ -21,11 +24,17 @@ export interface AssetSelection {
   voice: boolean;
 }
 
+export interface ListingOptions {
+  listOnMarket: boolean;
+  pricePerShare: number;
+  totalShares: number;
+}
+
 interface MintModalProps {
   isOpen: boolean;
   onClose: () => void;
   specimen: Specimen | null;
-  onConfirmMint: (selection: AssetSelection) => Promise<void>;
+  onConfirmMint: (selection: AssetSelection, listingOptions?: ListingOptions) => Promise<void>;
   walletAddress: string;
   isMinting: boolean;
 }
@@ -48,6 +57,13 @@ const MintModal: React.FC<MintModalProps> = ({
     voice: true,
   });
 
+  // 市场上架选项
+  const [listingOptions, setListingOptions] = useState<ListingOptions>({
+    listOnMarket: false,
+    pricePerShare: 0.1,
+    totalShares: 100,
+  });
+
   useEffect(() => {
     if (isOpen && specimen) {
       setStep(0);
@@ -57,6 +73,11 @@ const MintModal: React.FC<MintModalProps> = ({
         dna: true,
         audio: !!specimen.audioData,
         voice: !!specimen.reflectionAudioData,
+      });
+      setListingOptions({
+        listOnMarket: false,
+        pricePerShare: 0.1,
+        totalShares: 100,
       });
     }
   }, [isOpen, specimen]);
@@ -72,13 +93,17 @@ const MintModal: React.FC<MintModalProps> = ({
   if (!isOpen || !specimen) return null;
 
   const handleMintClick = async () => {
-    await onConfirmMint(selection);
+    await onConfirmMint(selection, listingOptions.listOnMarket ? listingOptions : undefined);
     setStep(3);
   };
 
   const toggleSelection = (key: keyof AssetSelection) => {
     if (key === "image") return; // Locked
     setSelection((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const toggleListOnMarket = () => {
+    setListingOptions(prev => ({ ...prev, listOnMarket: !prev.listOnMarket }));
   };
 
   return (
@@ -351,6 +376,106 @@ const MintModal: React.FC<MintModalProps> = ({
                         />
                       )}
                     </div>
+                  </div>
+
+                  {/* Market Listing Section */}
+                  <div className="border-t-2 border-dashed border-gray-300 pt-3 mt-3">
+                    <div
+                      className="text-sm font-bold border-b-2 border-black pb-1 mb-3 flex items-center gap-2"
+                    >
+                      <Store className="w-4 h-4 text-riso-green" />
+                      LIST ON MARKETPLACE
+                    </div>
+
+                    {/* Toggle Market Listing */}
+                    <div
+                      onClick={toggleListOnMarket}
+                      className={`flex items-center justify-between p-3 border-2 border-black transition-all cursor-pointer hover:translate-x-1
+                                  ${listingOptions.listOnMarket ? "bg-riso-green/20 border-riso-green" : "bg-white hover:bg-gray-50"}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Zap className={`w-5 h-5 ${listingOptions.listOnMarket ? "text-riso-green" : "text-gray-400"}`} />
+                        <div>
+                          <div className="text-xs font-bold">
+                            SELL ROYALTY SHARES
+                          </div>
+                          <div className="text-[10px] text-gray-500">
+                            Allow others to purchase ownership shares
+                          </div>
+                        </div>
+                      </div>
+                      <div
+                        className={`w-4 h-4 border-2 border-black flex items-center justify-center ${listingOptions.listOnMarket ? "bg-riso-green" : "bg-white"}`}
+                      >
+                        {listingOptions.listOnMarket && (
+                          <Check className="w-3 h-3 text-white" />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Pricing Options (shown when listing is enabled) */}
+                    {listingOptions.listOnMarket && (
+                      <div className="mt-3 p-3 bg-gray-50 border-2 border-dashed border-gray-300 space-y-3 animate-in slide-in-from-top duration-200">
+                        <div className="grid grid-cols-2 gap-3">
+                          {/* Price per Share */}
+                          <div>
+                            <label className="text-[10px] font-bold text-gray-500 block mb-1">
+                              PRICE PER SHARE (ZETA)
+                            </label>
+                            <div className="relative">
+                              <Zap className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-riso-green" />
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0.01"
+                                value={listingOptions.pricePerShare}
+                                onChange={(e) => setListingOptions(prev => ({
+                                  ...prev,
+                                  pricePerShare: parseFloat(e.target.value) || 0.01
+                                }))}
+                                className="w-full pl-7 pr-2 py-2 border-2 border-black text-sm font-mono"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Total Shares */}
+                          <div>
+                            <label className="text-[10px] font-bold text-gray-500 block mb-1">
+                              TOTAL SHARES
+                            </label>
+                            <div className="relative">
+                              <Users className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-riso-blue" />
+                              <select
+                                value={listingOptions.totalShares}
+                                onChange={(e) => setListingOptions(prev => ({
+                                  ...prev,
+                                  totalShares: parseInt(e.target.value)
+                                }))}
+                                className="w-full pl-7 pr-2 py-2 border-2 border-black text-sm font-mono appearance-none bg-white"
+                              >
+                                <option value={100}>100</option>
+                                <option value={500}>500</option>
+                                <option value={1000}>1,000</option>
+                                <option value={5000}>5,000</option>
+                                <option value={10000}>10,000</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Summary */}
+                        <div className="bg-riso-black text-white p-2 text-xs font-mono flex justify-between">
+                          <span>Total Value:</span>
+                          <span className="text-riso-green font-bold">
+                            {(listingOptions.pricePerShare * listingOptions.totalShares).toFixed(2)} ZETA
+                          </span>
+                        </div>
+
+                        <p className="text-[9px] text-gray-500 text-center">
+                          ⚡ Cross-chain payments powered by ZetaChain
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

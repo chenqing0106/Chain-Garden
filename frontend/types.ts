@@ -32,6 +32,47 @@ export interface Specimen {
   txHash?: string;
   owner?: string;
   tokenId?: string;
+  // Market Data (New)
+  isListed?: boolean; // 是否公开上架
+  pricePerShare?: number; // 每份价格 (ZETA)
+  totalShares?: number; // 总份额
+  soldShares?: number; // 已售份额
+}
+
+// 市场上架项目
+export interface MarketListing {
+  id: string;
+  specimen: Specimen;
+  creator: string; // 创作者地址
+  creatorName?: string; // 创作者昵称 (Botanist)
+  pricePerShare: number; // 每份价格 (ZETA)
+  totalShares: number; // 总份额
+  soldShares: number; // 已售份额
+  listedAt: number; // 上架时间
+  genre?: string; // 植物类型分类 (Tree/Vine/Succulent/etc)
+  plays?: number; // 查看次数
+}
+
+// 支付链选项
+export interface ChainOption {
+  id: string;
+  name: string;
+  icon: string;
+  symbol: string;
+  disabled?: boolean;
+  tooltip?: string;
+}
+
+// 购买记录
+export interface PurchaseRecord {
+  id: string;
+  listingId: string;
+  buyer: string;
+  shares: number;
+  totalPrice: number;
+  chain: string; // 支付使用的链
+  timestamp: number;
+  txHash?: string;
 }
 
 export interface AudioSource {
