@@ -7,42 +7,39 @@ Chain Garden 致力于探索 **生成式艺术 (Generative Art)**、**人工智�
 ---
 
 ### 已部署地址
-https://chain-garden.vercel.app/
+https://chain-garden-zetachain.vercel.app/
 
 ## 📁 项目架构
 
 ```
 chain-garden/
-├── contracts/                 # 智能合约代码
-│   └── ChainGardenNFT.sol    # ERC-721 NFT合约
-├── scripts/                   # 部署脚本
-│   └── deploy.js             # 合约部署脚本
-├── frontend/                  # React前端代码
-│   ├── components/           # React组件
-│   │   ├── MintModal.tsx
-│   │   ├── PlantCanvas.tsx
-│   │   └── SpecimenDetailModal.tsx
-│   ├── services/             # 服务层
-│   │   ├── audioService.ts   # 音频分析服务
-│   │   ├── geminiService.ts  # Gemini AI服务
-│   │   ├── plantMusicService.ts # 植物音乐生成
-│   │   ├── ipfsService.ts # ipfs去中心化处理
-│   │   └── web3Service.ts    # Web3交互服务
-│   ├── App.tsx               # 主应用组件
-│   ├── index.tsx             # 入口文件
-│   └── types.ts              # TypeScript类型定义
-├── hardhat.config.js         # Hardhat配置
-├── package.json              # 项目依赖（Hardhat）
+├── contracts/ # 智能合约 (Solidity)
+│ ├── ChainGardenNFT.sol # 核心 NFT 合约，负责植物标本的铸造、所有权管理及元数据绑定
+│ └── ZetaChainUniversalNFT.sol # ZetaChain 全链 NFT 实现，支持跨链互操作性 (Omnichain)
+├── frontend/ # React 前端应用
+│ ├── components/ # UI 交互组件
+│ │ ├── PlantCanvas.tsx # 渲染引擎
+│ │ ├── Marketplace.tsx # 全链市场
+│ │ └── MintModal.tsx # 铸造流程
+│ ├── services/ # 核心业务服务层
+│ │ ├── ai/ # AI 适配层：集成 Qwen/Gemini，将文字意象转化为植物 DNA 参数
+│ │ ├── audioService.ts # 音频处理
+│ │ ├── web3Service.ts # 链上交互
+│ │ └── ipfsService.ts # 去中心化存储
+│ └── types.ts # 数据定义
+├── scripts/ # 自动化脚本 (部署、验证及辅助工具)
+└── hardhat.config.js # Hardhat 配置
 └── README.md                 # 项目文档
 ```
-## 🔧 技术栈
 
-- **智能合约**: Solidity 0.8.20, Hardhat, OpenZeppelin
-- **前端**: React 19, TypeScript, Vite, TailwindCSS
-- **Web3**: Ethers.js v6
-- **AI**: Qwen API（推荐）或 Google Gemini API
-- **音频**: Tone.js
-- **存储**: IPFS (Pinata), LocalStorage
+## 🔧 技术栈详解
+
+- **区块链 (ZetaChain)**: 部署于 **ZetaChain Athens Testnet**。利用其 **Omnichain Smart Contracts** 特性，使 NFT 具备全链互操作潜力，实现资产在多链环境下的确权。
+- **Web3 交互**: 使用 **Ethers.js v6** 与合约通信，通过 **ZetaChain** 提供的全链架构，确保用户可以在统一的界面下完成跨链资产的操作。
+- **人工智能 (AI)**: 集成 **阿里云通义千问 (Qwen)** 与 **Google Gemini**，作为植物生成的“基因设计师”，将抽象的情绪描述精准转化为生长的 DNA 序列。
+- **生成式艺术**: 基于 **HTML5 Canvas** 的生成式算法，结合 **Risograph** 美学滤镜，创作具有独特质感的数字标本。
+- **音频驱动**: 结合 **Tone.js** 与 **Web Audio API**，实现“视听共生”——植物随音乐律动生长，并根据 DNA 实时生成背景环境音。
+- **基础设施**: 使用 **IPFS (Pinata)** 进行去中心化存储，确保标本数据的永久性；**Hardhat** 用于合约的开发、测试与自动化部署。
 
 ---
 
