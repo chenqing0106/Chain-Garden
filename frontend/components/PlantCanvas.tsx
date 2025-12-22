@@ -1349,68 +1349,85 @@ const PlantCanvas: React.FC<PlantCanvasProps> = ({
     const bassProgress = bassGrowthRef.current / 100;
     const midProgress = midGrowthRef.current / 100;
     const trebleProgress = trebleGrowthRef.current / 100;
-    
+
     const bassPulse = bassPulseRef.current;
     const midPulse = midPulseRef.current;
     const treblePulse = treblePulseRef.current;
-    
-    const progress = Math.max(0.18, (bassProgress + midProgress + trebleProgress) / 3);
-    const baseRadius = Math.min(width, height) * 0.42 * progress + 100;
-    const spokes = Math.max(20, Math.floor(dna.branchingFactor * 7));
-    const nodeCount = 5 + Math.floor(progress * 12);
+
+    const avgProgress = (bassProgress + midProgress + trebleProgress) / 3;
+    const progress = avgProgress;
+
+    // 基础半径从 0 开始生长，移除固定的 +100 偏移
+    const baseRadius = Math.min(width, height) * 0.5 * progress;
+
+    // 射线数量随进度增加，最多到 branchingFactor 决定的值
+    const maxSpokes = Math.max(20, Math.floor(dna.branchingFactor * 7));
+    const spokes = Math.floor(maxSpokes * Math.min(1, progress * 2));
+
+    // 节点数量也随进度增加，从 0 开始
+    const nodeCount = Math.floor(progress * 15);
+
     const colorStem = dna.colorPalette[0];
     const colorNode = dna.colorPalette[1] ?? "#5fb895";
     const colorAccent = dna.colorPalette[2] ?? "#f4c095";
 
-    for (let i = 0; i < spokes; i++) {
-      const angle = (Math.PI * 2 * i) / spokes;
-      const sway =
-        Math.sin(timeRef.current * 0.8 + i) *
-        (dna.angleVariance * 0.01 + stressRef.current * 0.2);
-      const rayLength =
-        baseRadius * (0.8 + Math.sin(timeRef.current + i) * 0.12);
-      const ex = cx + Math.cos(angle + sway) * rayLength;
-      const ey = cy + Math.sin(angle + sway) * rayLength;
+    // 只有有进度时才绘制射线
+    if (progress > 0.01) {
+      for (let i = 0; i < spokes; i++) {
+        const angle = (Math.PI * 2 * i) / spokes;
+        const sway =
+          Math.sin(timeRef.current * 0.8 + i) *
+          (dna.angleVariance * 0.01 + stressRef.current * 0.2);
+        const rayLength =
+          baseRadius * (0.8 + Math.sin(timeRef.current + i) * 0.12);
+        const ex = cx + Math.cos(angle + sway) * rayLength;
+        const ey = cy + Math.sin(angle + sway) * rayLength;
 
-      drawWordStem(ctx, cx, cy, ex, ey, colorStem);
-
-      ctx.save();
-      ctx.strokeStyle = `${colorStem}40`;
-      ctx.lineWidth = 0.8;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(ex, ey);
-      ctx.stroke();
-      ctx.restore();
-
-      // 节点根据位置使用不同频段的脉冲
-      for (let n = 1; n <= nodeCount; n++) {
-        const t = n / (nodeCount + 1);
-        const nx = cx + (ex - cx) * t;
-        const ny = cy + (ey - cy) * t;
-        
-        // 内层节点用低频脉冲，中层用中频，外层用高频
-        let nodePulse = 0;
-        if (t < 0.33) {
-          nodePulse = bassPulse;
-        } else if (t < 0.66) {
-          nodePulse = midPulse;
-        } else {
-          nodePulse = treblePulse;
+        // 射线长度足够时才绘制文字
+        if (rayLength > 20) {
+          drawWordStem(ctx, cx, cy, ex, ey, colorStem);
         }
-        const pulseScale = 1 + nodePulse * 0.6;
-        
-        const radius = (4 + t * 10 + energyRef.current * 6) * pulseScale;
-        drawRadialNode(ctx, nx, ny, radius, colorNode, colorAccent);
-      }
 
-      // 末端节点用高频脉冲
-      const bloomRadius = (10 + trebleProgress * 20) * (1 + treblePulse * 0.5);
-      drawRadialNode(ctx, ex, ey, bloomRadius, colorAccent, colorStem);
+        ctx.save();
+        ctx.strokeStyle = `${colorStem}40`;
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(ex, ey);
+        ctx.stroke();
+        ctx.restore();
+
+        // 节点根据位置使用不同频段的脉冲
+        for (let n = 1; n <= nodeCount; n++) {
+          const t = n / (nodeCount + 1);
+          const nx = cx + (ex - cx) * t;
+          const ny = cy + (ey - cy) * t;
+
+          // 内层节点用低频脉冲，中层用中频，外层用高频
+          let nodePulse = 0;
+          if (t < 0.33) {
+            nodePulse = bassPulse;
+          } else if (t < 0.66) {
+            nodePulse = midPulse;
+          } else {
+            nodePulse = treblePulse;
+          }
+          const pulseScale = 1 + nodePulse * 0.6;
+
+          const radius = (2 + t * 10 + energyRef.current * 6) * pulseScale;
+          drawRadialNode(ctx, nx, ny, radius, colorNode, colorAccent);
+        }
+
+        // 末端节点用高频脉冲
+        const bloomRadius = (5 + trebleProgress * 25) * (1 + treblePulse * 0.5);
+        if (rayLength > 10) {
+          drawRadialNode(ctx, ex, ey, bloomRadius, colorAccent, colorStem);
+        }
+      }
     }
 
-    // 中心节点用低频脉冲
-    const centerRadius = (18 + bassProgress * 20) * (1 + bassPulse * 0.4);
+    // 中心节点始终存在，但大小随进度增长
+    const centerRadius = (10 + bassProgress * 30) * (1 + bassPulse * 0.4);
     drawRadialNode(
       ctx,
       cx,
@@ -1421,7 +1438,7 @@ const PlantCanvas: React.FC<PlantCanvasProps> = ({
     );
 
     const haloWords = Math.min(descriptionWords.length, 48);
-    if (haloWords) {
+    if (haloWords && progress > 0.4) {
       const haloRadius = baseRadius * 0.6;
       for (let i = 0; i < haloWords; i++) {
         const word = descriptionWords[i];
@@ -1438,45 +1455,49 @@ const PlantCanvas: React.FC<PlantCanvasProps> = ({
       }
     }
 
-    const satelliteClusters = 6;
-    for (let i = 0; i < satelliteClusters; i++) {
+    // 卫星簇随进度逐渐出现
+    const satelliteCount = Math.floor(progress * 8);
+    for (let i = 0; i < satelliteCount; i++) {
       const angle =
-        (Math.PI * 2 * i) / satelliteClusters + timeRef.current * 0.1;
+        (Math.PI * 2 * i) / 8 + timeRef.current * 0.1;
       const dist = baseRadius * 1.15 + Math.sin(timeRef.current + i) * 20;
       const sx = cx + Math.cos(angle) * dist;
       const sy = cy + Math.sin(angle) * dist;
-      drawRadialNode(
-        ctx,
-        sx,
-        sy,
-        12 + energyRef.current * 8,
-        colorNode,
-        colorAccent,
-      );
-      ctx.save();
-      ctx.strokeStyle = `${colorStem}50`;
-      ctx.lineWidth = 0.5;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(sx, sy);
-      ctx.stroke();
-      ctx.restore();
-
-      const satellites = 5;
-      for (let s = 0; s < satellites; s++) {
-        const theta = angle + (Math.PI * 2 * s) / satellites;
-        const localRadius = 30 + s * 8;
-        const px = sx + Math.cos(theta) * localRadius;
-        const py = sy + Math.sin(theta) * localRadius;
-        drawRadialNode(ctx, px, py, 4 + s * 2, colorAccent, colorStem);
+      
+      if (dist > 30) {
+        drawRadialNode(
+          ctx,
+          sx,
+          sy,
+          8 + energyRef.current * 10,
+          colorNode,
+          colorAccent,
+        );
         ctx.save();
-        ctx.strokeStyle = `${colorAccent}60`;
+        ctx.strokeStyle = `${colorStem}50`;
         ctx.lineWidth = 0.5;
         ctx.beginPath();
-        ctx.moveTo(sx, sy);
-        ctx.lineTo(px, py);
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(sx, sy);
         ctx.stroke();
         ctx.restore();
+
+        const satellites = 3 + Math.floor(progress * 4);
+        for (let s = 0; s < satellites; s++) {
+          const theta = angle + (Math.PI * 2 * s) / satellites;
+          const localRadius = 20 + s * 8;
+          const px = sx + Math.cos(theta) * localRadius;
+          const py = sy + Math.sin(theta) * localRadius;
+          drawRadialNode(ctx, px, py, 2 + s * 2, colorAccent, colorStem);
+          ctx.save();
+          ctx.strokeStyle = `${colorAccent}60`;
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(sx, sy);
+          ctx.lineTo(px, py);
+          ctx.stroke();
+          ctx.restore();
+        }
       }
     }
   };

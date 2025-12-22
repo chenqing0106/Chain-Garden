@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Search, TrendingUp, Clock, Music, Grid, List,
-  ChevronDown, Zap, Users, Sparkles, Filter
+  ChevronDown, Zap, Users, Sparkles, Filter, Leaf, ShoppingBag, Wallet
 } from 'lucide-react';
 import { MarketListing } from '../types';
 import { marketService, GENRES } from '../services/marketService';
@@ -10,12 +10,19 @@ import MusicCard from './MusicCard';
 interface MarketplaceProps {
   onSelectListing: (listing: MarketListing) => void;
   walletAddress: string | null;
+  refreshKey?: number;  // 购买成功后递增，触发刷新
 }
 
 type SortOption = 'latest' | 'trending' | 'price_low' | 'price_high';
 type ViewMode = 'grid' | 'list';
+type TabMode = 'explore' | 'holdings';
 
-const Marketplace: React.FC<MarketplaceProps> = ({ onSelectListing, walletAddress }) => {
+interface HoldingItem {
+  listing: MarketListing;
+  shares: number;
+}
+
+const Marketplace: React.FC<MarketplaceProps> = ({ onSelectListing, walletAddress, refreshKey = 0 }) => {
   const [listings, setListings] = useState<MarketListing[]>([]);
   const [filteredListings, setFilteredListings] = useState<MarketListing[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -23,13 +30,27 @@ const Marketplace: React.FC<MarketplaceProps> = ({ onSelectListing, walletAddres
   const [sortBy, setSortBy] = useState<SortOption>('latest');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [showFilters, setShowFilters] = useState(false);
+  
+  // 新增：标签页和持仓
+  const [activeTab, setActiveTab] = useState<TabMode>('explore');
+  const [holdings, setHoldings] = useState<HoldingItem[]>([]);
 
-  // 加载市场数据
+  // 加载市场数据 (refreshKey 变化时也刷新)
   useEffect(() => {
     const data = marketService.getAllListings();
     setListings(data);
     setFilteredListings(data);
-  }, []);
+  }, [refreshKey]);
+
+  // 加载用户持仓 (refreshKey 变化时也刷新)
+  useEffect(() => {
+    if (walletAddress) {
+      const userHoldings = marketService.getUserHoldings(walletAddress);
+      setHoldings(userHoldings);
+    } else {
+      setHoldings([]);
+    }
+  }, [walletAddress, listings, refreshKey]);
 
   // 搜索和筛选
   useEffect(() => {
@@ -108,7 +129,39 @@ const Marketplace: React.FC<MarketplaceProps> = ({ onSelectListing, walletAddres
         </div>
       </div>
 
-      {/* Search & Filters */}
+      {/* Tab Navigation */}
+      <div className="bg-riso-paper border-b-2 border-black px-8">
+        <div className="max-w-6xl mx-auto flex">
+          <button
+            onClick={() => setActiveTab('explore')}
+            className={`px-6 py-3 font-bold text-sm flex items-center gap-2 border-b-4 transition-colors
+                       ${activeTab === 'explore' 
+                         ? 'border-riso-green text-riso-green' 
+                         : 'border-transparent text-gray-500 hover:text-riso-black'}`}
+          >
+            <Sparkles className="w-4 h-4" />
+            EXPLORE
+          </button>
+          <button
+            onClick={() => setActiveTab('holdings')}
+            className={`px-6 py-3 font-bold text-sm flex items-center gap-2 border-b-4 transition-colors
+                       ${activeTab === 'holdings' 
+                         ? 'border-riso-pink text-riso-pink' 
+                         : 'border-transparent text-gray-500 hover:text-riso-black'}`}
+          >
+            <ShoppingBag className="w-4 h-4" />
+            MY COLLECTION
+            {holdings.length > 0 && (
+              <span className="bg-riso-pink text-white text-[10px] px-1.5 py-0.5 rounded-full">
+                {holdings.length}
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Search & Filters (only show in explore tab) */}
+      {activeTab === 'explore' && (
       <div className="sticky top-0 z-40 bg-riso-paper border-b-2 border-black px-8 py-4">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-wrap gap-4 items-center">
@@ -193,8 +246,105 @@ const Marketplace: React.FC<MarketplaceProps> = ({ onSelectListing, walletAddres
           )}
         </div>
       </div>
+      )}
 
-      {/* Results */}
+      {/* MY COLLECTION TAB */}
+      {activeTab === 'holdings' && (
+        <div className="px-8 py-8">
+          <div className="max-w-6xl mx-auto">
+            {!walletAddress ? (
+              // 未连接钱包
+              <div className="text-center py-20">
+                <Wallet className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                <h3 className="text-lg font-bold text-gray-500 mb-2">Connect Your Wallet</h3>
+                <p className="text-sm text-gray-400 font-mono mb-4">
+                  Connect your wallet to view your collected specimens
+                </p>
+              </div>
+            ) : holdings.length === 0 ? (
+              // 没有持仓
+              <div className="text-center py-20">
+                <Leaf className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                <h3 className="text-lg font-bold text-gray-500 mb-2">No Specimens Collected</h3>
+                <p className="text-sm text-gray-400 font-mono mb-4">
+                  Start collecting by purchasing shares from the marketplace
+                </p>
+                <button
+                  onClick={() => setActiveTab('explore')}
+                  className="px-6 py-2 bg-riso-green text-white font-bold border-2 border-black
+                             hover:bg-riso-black transition-colors"
+                >
+                  EXPLORE MARKETPLACE
+                </button>
+              </div>
+            ) : (
+              // 显示持仓
+              <>
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h2 className="text-xl font-bold">My Collection</h2>
+                    <p className="text-sm text-gray-500 font-mono">
+                      {holdings.length} specimen{holdings.length > 1 ? 's' : ''} • {holdings.reduce((sum, h) => sum + h.shares, 0)} total shares
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {holdings.map(({ listing, shares }) => (
+                    <div
+                      key={listing.id}
+                      onClick={() => onSelectListing(listing)}
+                      className="bg-white border-2 border-riso-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] 
+                                 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[3px] hover:translate-y-[3px]
+                                 transition-all cursor-pointer group overflow-hidden"
+                    >
+                      {/* 图片区域 */}
+                      <div className="relative aspect-square overflow-hidden border-b-2 border-riso-black">
+                        <img
+                          src={listing.specimen.imageData}
+                          alt={listing.specimen.dna.speciesName}
+                          className="w-full h-full object-cover"
+                        />
+                        {/* 持有标签 */}
+                        <div className="absolute top-2 left-2 bg-riso-pink text-white text-[10px] font-bold px-2 py-1 border border-black">
+                          OWNED
+                        </div>
+                        <div className="absolute bottom-2 right-2 bg-riso-black text-white text-xs font-bold px-2 py-1">
+                          {shares} shares
+                        </div>
+                      </div>
+                      
+                      {/* 信息区域 */}
+                      <div className="p-4 space-y-2">
+                        <h3 className="font-bold text-sm truncate">{listing.specimen.dna.speciesName}</h3>
+                        <p className="text-xs text-gray-500 font-mono">by {listing.creatorName}</p>
+                        
+                        <div className="flex justify-between items-center pt-2 border-t border-dashed border-gray-300">
+                          <span className="text-[10px] text-gray-400">Your ownership</span>
+                          <span className="text-sm font-bold text-riso-green">
+                            {((shares / listing.totalShares) * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] text-gray-400">Value</span>
+                          <span className="text-sm font-bold flex items-center gap-1">
+                            <Zap className="w-3 h-3 text-riso-green" />
+                            {(shares * listing.pricePerShare).toFixed(3)} ZETA
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* EXPLORE TAB - Results */}
+      {activeTab === 'explore' && (
       <div className="px-8 py-8">
         <div className="max-w-6xl mx-auto">
           {/* Results Header */}
@@ -281,6 +431,7 @@ const Marketplace: React.FC<MarketplaceProps> = ({ onSelectListing, walletAddres
           )}
         </div>
       </div>
+      )}
 
       {/* Cross-chain Banner */}
       <div className="bg-gradient-to-r from-riso-blue to-riso-green text-white px-8 py-6 mt-8">

@@ -149,6 +149,7 @@ const App: React.FC = () => {
   const [selectedListing, setSelectedListing] = useState<MarketListing | null>(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [isPurchasing, setIsPurchasing] = useState(false);
+  const [marketRefreshKey, setMarketRefreshKey] = useState(0);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -825,8 +826,9 @@ const App: React.FC = () => {
     setIsPurchasing(true);
     try {
       await marketService.purchaseShares(listingId, shares, walletAddress, chain);
-      // 刷新列表
+      // 刷新列表和持仓
       setSelectedListing(marketService.getListing(listingId) || null);
+      setMarketRefreshKey(prev => prev + 1);  // 触发 Marketplace 刷新
     } catch (e: any) {
       console.error(e);
       alert(e.message || "Purchase failed");
@@ -1769,6 +1771,7 @@ const App: React.FC = () => {
           <Marketplace
             onSelectListing={handleSelectListing}
             walletAddress={walletAddress}
+            refreshKey={marketRefreshKey}
           />
         ) : showGallery ? (
           <div
