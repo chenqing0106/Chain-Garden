@@ -40,8 +40,10 @@ import MintModal, { AssetSelection, ListingOptions } from "./components/MintModa
 import SpecimenDetailModal from "./components/SpecimenDetailModal";
 import Marketplace from "./components/Marketplace";
 import PurchaseModal from "./components/PurchaseModal";
+import GuideModal from "./components/GuideModal";
 import { PlantDNA, Specimen, AudioSource, LabState, BioState, MarketListing } from "./types";
 import { uploadSpecimenToIPFS } from "./services/ipfsService";
+import { HelpCircle, ChevronRight } from "lucide-react";
 
 // Default DNA if no Gemini
 const DEFAULT_DNA: PlantDNA = {
@@ -150,6 +152,8 @@ const App: React.FC = () => {
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [marketRefreshKey, setMarketRefreshKey] = useState(0);
+
+  const [showGuide, setShowGuide] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -890,6 +894,11 @@ const App: React.FC = () => {
         onPurchase={handlePurchase}
       />
 
+      <GuideModal 
+        isOpen={showGuide} 
+        onClose={() => setShowGuide(false)} 
+      />
+
       {/* LEFT PANEL: Swappable Interface */}
       <div
         className="w-full md:w-1/3 lg:w-1/4 p-6 border-r-2 border-riso-black bg-riso-paper z-10 flex flex-col gap-6 overflow-y-auto h-screen custom-scrollbar transition-all duration-500"
@@ -925,6 +934,15 @@ const App: React.FC = () => {
               data-oid="kpz07:l"
             ></div>
           </div>
+          
+          {/* Quick Help Link */}
+          <button 
+            onClick={() => setShowGuide(true)}
+            className="mt-4 flex items-center gap-1 text-[10px] font-mono text-riso-blue hover:underline group"
+          >
+            <HelpCircle className="w-3 h-3 group-hover:animate-bounce" />
+            NEED A FIELD GUIDE?
+          </button>
         </div>
 
         {/* Connect/Disconnect Wallet */}
@@ -1183,7 +1201,8 @@ const App: React.FC = () => {
                     <button
                       onClick={handleGenerateDNA}
                       disabled={isGenerating || (!prompt && !uploadedImage)}
-                      className="w-full py-3 bg-riso-black text-white font-bold border-2 border-transparent hover:bg-riso-green hover:border-black hover:text-black flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className={`w-full py-3 bg-riso-black text-white font-bold border-2 border-transparent hover:bg-riso-green hover:border-black hover:text-black flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all
+                        ${(prompt.trim() || uploadedImage) && !isGenerating ? "ring-4 ring-riso-blue ring-opacity-50 animate-pulse" : ""}`}
                       data-oid="eu93a4x"
                     >
                       {isGenerating ? (
@@ -1809,14 +1828,21 @@ const App: React.FC = () => {
 
             {collection.length === 0 && (
               <div
-                className="text-center mt-20 opacity-50 font-mono"
+                className="text-center mt-20 opacity-50 font-mono flex flex-col items-center"
                 data-oid="3zjw1-m"
               >
-                <Eye className="w-12 h-12 mx-auto mb-4" data-oid="9rg_eis" />
-                <p data-oid="zajrp4v">No specimens collected yet.</p>
+                <Eye className="w-12 h-12 mb-4" data-oid="9rg_eis" />
+                <p data-oid="zajrp4v">还没有收集到任何标本。</p>
                 <p className="text-xs mt-2" data-oid="f.m4vlb">
-                  Return to lab to generate and save.
+                  回到实验室开始合成并保存你的第一个植物。
                 </p>
+                <button
+                  onClick={() => setShowGallery(false)}
+                  className="mt-6 px-6 py-2 bg-riso-black text-white font-bold border-2 border-riso-black hover:bg-riso-blue transition-all flex items-center gap-2 group"
+                >
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  前往实验室
+                </button>
               </div>
             )}
             <div
