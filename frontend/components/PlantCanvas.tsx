@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useMemo } from "react";
+import { useLanguage } from "../contexts/LanguageContext";
 import { PlantDNA, AudioSource, LabState, BioState } from "../types";
 
 interface PlantCanvasProps {
@@ -18,6 +19,7 @@ const PlantCanvas: React.FC<PlantCanvasProps> = ({
   triggerSnapshot,
   onBioUpdate,
 }) => {
+  const { t } = useLanguage();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const requestRef = useRef<number | null>(null);
   const growthRef = useRef<number>(0);
@@ -1892,11 +1894,11 @@ const PlantCanvas: React.FC<PlantCanvasProps> = ({
 
       {labState === "GROWING" && (
         <div
-          className="absolute top-4 left-4 font-mono text-[10px] bg-white/90 p-2 border border-black pointer-events-none z-10 shadow-sm"
+          className="absolute top-4 left-4 font-mono text-[10px] bg-white/90 p-2 border border-black pointer-events-none z-10 shadow-sm uppercase"
           data-oid="u6v1.kt"
         >
           <div data-oid="inw223v">
-            STRESS: {(stressRef.current * 100).toFixed(0)}%
+            {t("canvas_stress")}: {(stressRef.current * 100).toFixed(0)}%
           </div>
           <div className="w-24 h-1 bg-gray-200 mt-1" data-oid="-1vqsk3">
             <div
@@ -1906,10 +1908,10 @@ const PlantCanvas: React.FC<PlantCanvasProps> = ({
             ></div>
           </div>
           <div className="mt-2" data-oid="s0zn5iy">
-            ENERGY: {(energyRef.current * 100).toFixed(0)}%
+            {t("canvas_energy")}: {(energyRef.current * 100).toFixed(0)}%
           </div>
-          <div className="text-gray-400 mt-1" data-oid="fc_ey1c">
-            {analyzer ? "LINKED" : "NO SIGNAL"}
+          <div className="text-gray-400 mt-1 uppercase" data-oid="fc_ey1c">
+            {analyzer ? t("canvas_linked") : t("canvas_no_signal")}
           </div>
         </div>
       )}

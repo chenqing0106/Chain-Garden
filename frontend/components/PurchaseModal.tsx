@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from "../contexts/LanguageContext";
 import {
   X, Zap, Users, Music, Check, Loader, ChevronDown,
   TrendingUp, Wallet, ArrowRight, Play, Pause
@@ -23,6 +24,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({
   onConnectWallet,
   onPurchase,
 }) => {
+  const { t } = useLanguage();
   const [shares, setShares] = useState(1);
   const [selectedChain, setSelectedChain] = useState<ChainOption>(CHAIN_OPTIONS[0]);
   const [showChainDropdown, setShowChainDropdown] = useState(false);
@@ -79,8 +81,8 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({
         <div className="bg-riso-black text-white p-4 flex justify-between items-center border-b-4 border-riso-green">
           <div className="flex items-center gap-3">
             <TrendingUp className="w-5 h-5" />
-            <h2 className="font-bold font-mono text-lg tracking-widest">
-              COLLECT_SPECIMEN
+            <h2 className="font-bold font-mono text-lg tracking-widest uppercase">
+              {t("buy_title")}
             </h2>
           </div>
           <button
@@ -100,8 +102,8 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({
                 <Check className="w-12 h-12 text-white" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold text-riso-black mb-2">
-                  SPECIMEN COLLECTED!
+                <h3 className="text-2xl font-bold text-riso-black mb-2 uppercase">
+                  {t("buy_success")}
                 </h3>
                 <p className="text-sm text-gray-600 font-mono">
                   You now own {shares} shares of "{specimen.dna.speciesName}"
@@ -109,11 +111,11 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({
               </div>
               <div className="bg-riso-green/10 border-2 border-riso-green p-4 text-left font-mono text-xs">
                 <div className="flex justify-between mb-2">
-                  <span className="text-gray-500">Shares Acquired:</span>
+                  <span className="text-gray-500 uppercase">{t("market_shares_available")}:</span>
                   <span className="font-bold">{shares}</span>
                 </div>
-                <div className="flex justify-between mb-2">
-                  <span className="text-gray-500">Total Paid:</span>
+                <div className="flex justify-between mb-2 uppercase">
+                  <span className="text-gray-500 uppercase">{t("buy_total_cost")}</span>
                   <span className="font-bold">{totalPrice.toFixed(4)} {selectedChain.symbol}</span>
                 </div>
                 <div className="flex justify-between">
@@ -173,7 +175,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({
               <div className="w-full md:w-1/2 p-6 space-y-6 font-mono">
                 {/* Shares Selection */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500">SELECT SHARES</label>
+                  <label className="text-xs font-bold text-gray-500 uppercase">{t("buy_amount")}</label>
                   <div className="flex items-center gap-4">
                     <button
                       onClick={decrementShares}
@@ -258,17 +260,17 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({
                 </div>
 
                 {/* Price Summary */}
-                <div className="bg-riso-black text-white p-4 space-y-2">
+                <div className="bg-riso-black text-white p-4 space-y-2 uppercase">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Price per share</span>
+                    <span className="text-gray-400">{t("market_price")}</span>
                     <span>{pricePerShare.toFixed(4)} ZETA</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Shares</span>
+                    <span className="text-gray-400">{t("market_shares")}</span>
                     <span>× {shares}</span>
                   </div>
                   <div className="border-t border-gray-600 pt-2 flex justify-between text-lg font-bold">
-                    <span>Total</span>
+                    <span>TOTAL</span>
                     <span className="text-riso-green flex items-center gap-1">
                       <Zap className="w-4 h-4" />
                       {totalPrice.toFixed(4)} {selectedChain.symbol}
@@ -281,19 +283,19 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({
                   <button
                     onClick={handlePurchase}
                     disabled={isPurchasing}
-                    className="w-full py-4 bg-riso-green text-white font-bold text-lg border-2 border-black
+                    className="w-full py-4 bg-riso-green text-white font-bold text-lg border-2 border-black uppercase
                                shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-1 hover:translate-y-1
                                transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                   >
                     {walletAddress ? (
                       <>
                         <Zap className="w-5 h-5" />
-                        CONFIRM PURCHASE
+                        {t("buy_confirm_btn")}
                       </>
                     ) : (
                       <>
                         <Wallet className="w-5 h-5" />
-                        CONNECT WALLET
+                        {t("wallet_connect")}
                       </>
                     )}
                   </button>

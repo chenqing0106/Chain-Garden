@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from "../contexts/LanguageContext";
 import {
   Search, TrendingUp, Clock, Music, Grid, List,
   ChevronDown, Zap, Users, Sparkles, Filter, Leaf, ShoppingBag, Wallet
@@ -23,6 +24,7 @@ interface HoldingItem {
 }
 
 const Marketplace: React.FC<MarketplaceProps> = ({ onSelectListing, walletAddress, refreshKey = 0 }) => {
+  const { t } = useLanguage();
   const [listings, setListings] = useState<MarketListing[]>([]);
   const [filteredListings, setFilteredListings] = useState<MarketListing[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -102,28 +104,27 @@ const Marketplace: React.FC<MarketplaceProps> = ({ onSelectListing, walletAddres
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center gap-3 mb-4">
             <Sparkles className="w-8 h-8 text-riso-green" />
-            <h1 className="text-4xl font-bold tracking-tighter">
-              BOTANICAL SPECIMEN MARKETPLACE
+            <h1 className="text-4xl font-bold tracking-tighter uppercase">
+              {t("market_explore")}
             </h1>
           </div>
-          <p className="text-gray-400 max-w-2xl mb-8 font-mono text-sm">
-            Discover unique digital plants generated from audio & emotions. 
-            Each specimen includes DNA, visuals, and optional music. Purchase shares with any chain asset.
+          <p className="text-gray-400 max-w-2xl mb-8 font-mono text-sm uppercase">
+            {t("market_description")}
           </p>
 
           {/* Stats */}
           <div className="grid grid-cols-3 gap-6 max-w-lg">
             <div className="border-l-2 border-riso-green pl-4">
               <div className="text-2xl font-bold text-riso-green">{totalListings}</div>
-              <div className="text-xs text-gray-500 font-mono">SPECIMENS</div>
+              <div className="text-xs text-gray-500 font-mono uppercase">{t("market_stats_specimens")}</div>
             </div>
             <div className="border-l-2 border-riso-pink pl-4">
               <div className="text-2xl font-bold text-riso-pink">{totalVolume.toFixed(2)}</div>
-              <div className="text-xs text-gray-500 font-mono">VOLUME (ZETA)</div>
+              <div className="text-xs text-gray-500 font-mono uppercase">{t("market_stats_volume")}</div>
             </div>
             <div className="border-l-2 border-riso-blue pl-4">
               <div className="text-2xl font-bold text-riso-blue">{totalOwners}</div>
-              <div className="text-xs text-gray-500 font-mono">BOTANISTS</div>
+              <div className="text-xs text-gray-500 font-mono uppercase">{t("market_stats_botanists")}</div>
             </div>
           </div>
         </div>
@@ -134,23 +135,23 @@ const Marketplace: React.FC<MarketplaceProps> = ({ onSelectListing, walletAddres
         <div className="max-w-6xl mx-auto flex">
           <button
             onClick={() => setActiveTab('explore')}
-            className={`px-6 py-3 font-bold text-sm flex items-center gap-2 border-b-4 transition-colors
+            className={`px-6 py-3 font-bold text-sm flex items-center gap-2 border-b-4 transition-colors uppercase
                        ${activeTab === 'explore' 
                          ? 'border-riso-green text-riso-green' 
                          : 'border-transparent text-gray-500 hover:text-riso-black'}`}
           >
             <Sparkles className="w-4 h-4" />
-            EXPLORE
+            {t("market_tab_explore")}
           </button>
           <button
             onClick={() => setActiveTab('holdings')}
-            className={`px-6 py-3 font-bold text-sm flex items-center gap-2 border-b-4 transition-colors
+            className={`px-6 py-3 font-bold text-sm flex items-center gap-2 border-b-4 transition-colors uppercase
                        ${activeTab === 'holdings' 
                          ? 'border-riso-pink text-riso-pink' 
                          : 'border-transparent text-gray-500 hover:text-riso-black'}`}
           >
             <ShoppingBag className="w-4 h-4" />
-            MY COLLECTION
+            {t("market_tab_holdings")}
             {holdings.length > 0 && (
               <span className="bg-riso-pink text-white text-[10px] px-1.5 py-0.5 rounded-full">
                 {holdings.length}
@@ -172,8 +173,8 @@ const Marketplace: React.FC<MarketplaceProps> = ({ onSelectListing, walletAddres
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search specimens, botanists, types..."
-                className="w-full pl-10 pr-4 py-2 border-2 border-black font-mono text-sm bg-white
+                placeholder={t("market_search_placeholder")}
+                className="w-full pl-10 pr-4 py-2 border-2 border-black font-mono text-sm bg-white uppercase
                            focus:outline-none focus:ring-2 focus:ring-riso-blue"
               />
             </div>
@@ -183,10 +184,10 @@ const Marketplace: React.FC<MarketplaceProps> = ({ onSelectListing, walletAddres
               <select
                 value={selectedGenre}
                 onChange={(e) => setSelectedGenre(e.target.value)}
-                className="appearance-none px-4 py-2 pr-8 border-2 border-black font-mono text-sm bg-white cursor-pointer
+                className="appearance-none px-4 py-2 pr-8 border-2 border-black font-mono text-sm bg-white cursor-pointer uppercase
                            focus:outline-none focus:ring-2 focus:ring-riso-blue"
               >
-                <option value="All">All Types</option>
+                <option value="All">{t("market_filter_all")}</option>
                 {GENRES.map(genre => (
                   <option key={genre} value={genre}>{genre}</option>
                 ))}
@@ -199,13 +200,13 @@ const Marketplace: React.FC<MarketplaceProps> = ({ onSelectListing, walletAddres
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
-                className="appearance-none px-4 py-2 pr-8 border-2 border-black font-mono text-sm bg-white cursor-pointer
+                className="appearance-none px-4 py-2 pr-8 border-2 border-black font-mono text-sm bg-white cursor-pointer uppercase
                            focus:outline-none focus:ring-2 focus:ring-riso-blue"
               >
-                <option value="latest">Latest</option>
-                <option value="trending">Trending</option>
-                <option value="price_low">Price: Low to High</option>
-                <option value="price_high">Price: High to Low</option>
+                <option value="latest">{t("market_sort_latest")}</option>
+                <option value="trending">{t("market_sort_trending")}</option>
+                <option value="price_low">{t("market_sort_price_low")}</option>
+                <option value="price_high">{t("market_sort_price_high")}</option>
               </select>
               <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" />
             </div>
@@ -254,37 +255,37 @@ const Marketplace: React.FC<MarketplaceProps> = ({ onSelectListing, walletAddres
           <div className="max-w-6xl mx-auto">
             {!walletAddress ? (
               // 未连接钱包
-              <div className="text-center py-20">
+              <div className="text-center py-20 uppercase">
                 <Wallet className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                <h3 className="text-lg font-bold text-gray-500 mb-2">Connect Your Wallet</h3>
+                <h3 className="text-lg font-bold text-gray-500 mb-2">{t("market_connect_wallet")}</h3>
                 <p className="text-sm text-gray-400 font-mono mb-4">
-                  Connect your wallet to view your collected specimens
+                  {t("market_connect_wallet_desc")}
                 </p>
               </div>
             ) : holdings.length === 0 ? (
               // 没有持仓
-              <div className="text-center py-20">
+              <div className="text-center py-20 uppercase">
                 <Leaf className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                <h3 className="text-lg font-bold text-gray-500 mb-2">No Specimens Collected</h3>
+                <h3 className="text-lg font-bold text-gray-500 mb-2">{t("market_empty_holdings")}</h3>
                 <p className="text-sm text-gray-400 font-mono mb-4">
-                  Start collecting by purchasing shares from the marketplace
+                  {t("market_empty_holdings_desc")}
                 </p>
                 <button
                   onClick={() => setActiveTab('explore')}
                   className="px-6 py-2 bg-riso-green text-white font-bold border-2 border-black
-                             hover:bg-riso-black transition-colors"
+                             hover:bg-riso-black transition-colors uppercase"
                 >
-                  EXPLORE MARKETPLACE
+                  {t("market_tab_explore")}
                 </button>
               </div>
             ) : (
               // 显示持仓
               <>
-                <div className="flex justify-between items-center mb-6">
+                <div className="flex justify-between items-center mb-6 uppercase">
                   <div>
-                    <h2 className="text-xl font-bold">My Collection</h2>
+                    <h2 className="text-xl font-bold">{t("market_tab_holdings")}</h2>
                     <p className="text-sm text-gray-500 font-mono">
-                      {holdings.length} specimen{holdings.length > 1 ? 's' : ''} • {holdings.reduce((sum, h) => sum + h.shares, 0)} total shares
+                      {holdings.length} {t("specimens")} • {holdings.reduce((sum, h) => sum + h.shares, 0)} {t("market_shares_total")}
                     </p>
                   </div>
                 </div>
@@ -306,28 +307,28 @@ const Marketplace: React.FC<MarketplaceProps> = ({ onSelectListing, walletAddres
                           className="w-full h-full object-cover"
                         />
                         {/* 持有标签 */}
-                        <div className="absolute top-2 left-2 bg-riso-pink text-white text-[10px] font-bold px-2 py-1 border border-black">
-                          OWNED
+                        <div className="absolute top-2 left-2 bg-riso-pink text-white text-[10px] font-bold px-2 py-1 border border-black uppercase">
+                          {t("market_owned_label")}
                         </div>
-                        <div className="absolute bottom-2 right-2 bg-riso-black text-white text-xs font-bold px-2 py-1">
-                          {shares} shares
+                        <div className="absolute bottom-2 right-2 bg-riso-black text-white text-xs font-bold px-2 py-1 uppercase">
+                          {shares} {t("market_shares")}
                         </div>
                       </div>
                       
                       {/* 信息区域 */}
-                      <div className="p-4 space-y-2">
+                      <div className="p-4 space-y-2 uppercase">
                         <h3 className="font-bold text-sm truncate">{listing.specimen.dna.speciesName}</h3>
                         <p className="text-xs text-gray-500 font-mono">by {listing.creatorName}</p>
                         
                         <div className="flex justify-between items-center pt-2 border-t border-dashed border-gray-300">
-                          <span className="text-[10px] text-gray-400">Your ownership</span>
+                          <span className="text-[10px] text-gray-400">{t("market_your_ownership")}</span>
                           <span className="text-sm font-bold text-riso-green">
                             {((shares / listing.totalShares) * 100).toFixed(1)}%
                           </span>
                         </div>
                         
                         <div className="flex justify-between items-center">
-                          <span className="text-[10px] text-gray-400">Value</span>
+                          <span className="text-[10px] text-gray-400">{t("market_value")}</span>
                           <span className="text-sm font-bold flex items-center gap-1">
                             <Zap className="w-3 h-3 text-riso-green" />
                             {(shares * listing.pricePerShare).toFixed(3)} ZETA
@@ -349,8 +350,8 @@ const Marketplace: React.FC<MarketplaceProps> = ({ onSelectListing, walletAddres
         <div className="max-w-6xl mx-auto">
           {/* Results Header */}
           <div className="flex justify-between items-center mb-6">
-            <div className="text-sm font-mono text-gray-500">
-              Showing {filteredListings.length} of {listings.length} specimens
+            <div className="text-sm font-mono text-gray-500 uppercase">
+              {t("market_showing", { filtered: filteredListings.length.toString(), total: listings.length.toString() })}
             </div>
           </div>
 
@@ -411,8 +412,8 @@ const Marketplace: React.FC<MarketplaceProps> = ({ onSelectListing, walletAddres
                   </div>
                   
                   {/* Action */}
-                  <button className="px-4 py-2 bg-riso-black text-white text-xs font-bold hover:bg-riso-green transition-colors">
-                    BUY
+                  <button className="px-4 py-2 bg-riso-black text-white text-xs font-bold hover:bg-riso-green transition-colors uppercase">
+                    {t("market_buy_btn_short")}
                   </button>
                 </div>
               ))}
@@ -421,11 +422,11 @@ const Marketplace: React.FC<MarketplaceProps> = ({ onSelectListing, walletAddres
 
           {/* Empty State */}
           {filteredListings.length === 0 && (
-            <div className="text-center py-20">
+            <div className="text-center py-20 uppercase">
               <Music className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-              <h3 className="text-lg font-bold text-gray-500 mb-2">No specimens found</h3>
+              <h3 className="text-lg font-bold text-gray-500 mb-2">{t("no_specimens")}</h3>
               <p className="text-sm text-gray-400 font-mono">
-                Try adjusting your search or filters
+                {t("market_empty")}
               </p>
             </div>
           )}
@@ -434,12 +435,12 @@ const Marketplace: React.FC<MarketplaceProps> = ({ onSelectListing, walletAddres
       )}
 
       {/* Cross-chain Banner */}
-      <div className="bg-gradient-to-r from-riso-blue to-riso-green text-white px-8 py-6 mt-8">
+      <div className="bg-gradient-to-r from-riso-blue to-riso-green text-white px-8 py-6 mt-8 uppercase">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div>
-            <h3 className="font-bold text-lg mb-1">⚡ Powered by ZetaChain</h3>
+            <h3 className="font-bold text-lg mb-1">{t("market_zeta_powered")}</h3>
             <p className="text-sm opacity-80 font-mono">
-              Pay with ETH, BNB, MATIC, or BTC - seamlessly converted via cross-chain messaging
+              {t("market_zeta_desc")}
             </p>
           </div>
           <div className="flex gap-2 text-2xl">

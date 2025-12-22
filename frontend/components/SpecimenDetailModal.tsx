@@ -1,4 +1,5 @@
 import React from "react";
+import { useLanguage } from "../contexts/LanguageContext";
 import {
   X,
   Zap,
@@ -27,6 +28,7 @@ const SpecimenDetailModal: React.FC<SpecimenDetailModalProps> = ({
   onDelete,
   walletConnected,
 }) => {
+  const { t } = useLanguage();
   if (!specimen) return null;
 
   // Helper to trigger audio download
@@ -99,8 +101,8 @@ const SpecimenDetailModal: React.FC<SpecimenDetailModalProps> = ({
             >
               {specimen.dna.speciesName}
             </h2>
-            <p className="text-xs text-gray-500 mt-1" data-oid="wi7nntm">
-              DISCOVERED: {new Date(specimen.timestamp).toLocaleString()}
+            <p className="text-xs text-gray-500 mt-1 uppercase" data-oid="wi7nntm">
+              {t("detail_created")} {new Date(specimen.timestamp).toLocaleString()}
             </p>
           </div>
 
@@ -110,11 +112,10 @@ const SpecimenDetailModal: React.FC<SpecimenDetailModalProps> = ({
             data-oid="rk0fbl4"
           >
             <div
-              className="absolute -top-3 left-2 bg-riso-paper px-1 text-xs font-bold text-riso-black flex items-center gap-1"
+              className="absolute -top-3 left-2 bg-riso-paper px-1 text-xs font-bold text-riso-black flex items-center gap-1 uppercase"
               data-oid="gj5eg1r"
             >
-              <FileText className="w-3 h-3" data-oid="d.sjrz-" /> ORIGIN PROMPT
-              (USER INPUT)
+              <FileText className="w-3 h-3" data-oid="d.sjrz-" /> {t("reflection_title")}
             </div>
             <p
               className="text-sm italic text-riso-black break-words"
@@ -131,11 +132,10 @@ const SpecimenDetailModal: React.FC<SpecimenDetailModalProps> = ({
               data-oid="asx9m3."
             >
               <div
-                className="absolute -top-3 left-2 bg-riso-paper px-1 text-xs font-bold text-riso-green flex items-center gap-1"
+                className="absolute -top-3 left-2 bg-riso-paper px-1 text-xs font-bold text-riso-green flex items-center gap-1 uppercase"
                 data-oid="dxfl59h"
               >
-                <MessageCircle className="w-3 h-3" data-oid="ml:m79:" /> VOICE
-                REFLECTION
+                <MessageCircle className="w-3 h-3" data-oid="ml:m79:" /> {t("mint_voice")}
               </div>
               {/* Display the Question if available */}
               {specimen.reflectionQuestion && (
@@ -152,10 +152,10 @@ const SpecimenDetailModal: React.FC<SpecimenDetailModalProps> = ({
                 />
               </div>
               <p
-                className="text-[10px] text-gray-500 mt-1 italic"
+                className="text-[10px] text-gray-500 mt-1 italic uppercase"
                 data-oid="a43_yb0"
               >
-                Recorded response to self-exploration query.
+                {t("record_voice_desc")}
               </p>
             </div>
           )}
@@ -167,38 +167,38 @@ const SpecimenDetailModal: React.FC<SpecimenDetailModalProps> = ({
           >
             <div className="space-y-1" data-oid="hpcvqli">
               <span
-                className="block font-bold text-gray-400"
+                className="block font-bold text-gray-400 uppercase"
                 data-oid="5-ja:n5"
               >
-                ARCHITECTURE
+                {t("growth_arch")}
               </span>
               <span
                 className="block text-lg uppercase border-b border-dashed border-gray-300 pb-1"
                 data-oid="1:92j55"
               >
-                {specimen.dna.growthArchitecture.replace("_", " ")}
+                {t(specimen.dna.growthArchitecture as any) || specimen.dna.growthArchitecture.replace("_", " ")}
               </span>
             </div>
             <div className="space-y-1" data-oid="gz8g55_">
               <span
-                className="block font-bold text-gray-400"
+                className="block font-bold text-gray-400 uppercase"
                 data-oid="417:9mb"
               >
-                LEAF TYPE
+                {t("leaf_type")}
               </span>
               <span
                 className="block text-lg uppercase border-b border-dashed border-gray-300 pb-1"
                 data-oid="6hjoo9s"
               >
-                {specimen.dna.leafShape}
+                {t(specimen.dna.leafShape as any) || specimen.dna.leafShape}
               </span>
             </div>
             <div className="space-y-1" data-oid="7i.f7rj">
               <span
-                className="block font-bold text-gray-400"
+                className="block font-bold text-gray-400 uppercase"
                 data-oid="az.p:b:"
               >
-                GROWTH RATE
+                {t("growth_speed")}
               </span>
               <div
                 className="w-full h-2 bg-gray-200 border border-black"
@@ -236,11 +236,11 @@ const SpecimenDetailModal: React.FC<SpecimenDetailModalProps> = ({
             {specimen.audioData && (
               <button
                 onClick={handleDownloadAudio}
-                className="w-full py-2 bg-riso-pink text-white font-bold border-2 border-black hover:bg-white hover:text-riso-pink transition-all flex items-center justify-center gap-2 mb-2"
+                className="w-full py-2 bg-riso-pink text-white font-bold border-2 border-black hover:bg-white hover:text-riso-pink transition-all flex items-center justify-center gap-2 mb-2 uppercase"
                 data-oid="93l:u8a"
               >
                 <Download className="w-4 h-4" data-oid="_0nsl.7" />
-                DOWNLOAD RECORDED AUDIO
+                {t("mint_music")} (DOWNLOAD)
               </button>
             )}
 
@@ -254,22 +254,21 @@ const SpecimenDetailModal: React.FC<SpecimenDetailModalProps> = ({
                 data-oid=".cstka8"
               >
                 <span
-                  className="font-bold flex items-center gap-2"
+                  className="font-bold flex items-center gap-2 uppercase"
                   data-oid="psyot5x"
                 >
-                  <Hash className="w-4 h-4" data-oid="s:-fv54" /> BLOCKCHAIN
-                  STATUS
+                  <Hash className="w-4 h-4" data-oid="s:-fv54" /> {t("status")}
                 </span>
                 {specimen.txHash ? (
                   <span
-                    className="text-riso-green font-bold text-xs px-2 py-1 bg-green-100 border border-green-500"
+                    className="text-riso-green font-bold text-xs px-2 py-1 bg-green-100 border border-green-500 uppercase"
                     data-oid="sksyxhw"
                   >
-                    MINTED
+                    {t("status_minted")}
                   </span>
                 ) : (
-                  <span className="text-gray-400 text-xs" data-oid="xyn7sz:">
-                    NOT ON CHAIN
+                  <span className="text-gray-400 text-xs uppercase" data-oid="xyn7sz:">
+                    {t("status_archive")}
                   </span>
                 )}
               </div>
@@ -290,32 +289,32 @@ const SpecimenDetailModal: React.FC<SpecimenDetailModalProps> = ({
               {!specimen.txHash ? (
                 <button
                   onClick={() => onMint(specimen)}
-                  className="flex-1 py-3 bg-riso-black text-white font-bold border-2 border-transparent hover:bg-white hover:text-riso-black hover:border-riso-black hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-riso-black text-white font-bold border-2 border-transparent hover:bg-white hover:text-riso-black hover:border-riso-black hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-2 uppercase"
                   data-oid="onjr5-1"
                 >
                   <Zap className="w-5 h-5" data-oid="qx:i3-v" />
-                  {walletConnected ? "MINT NFT" : "CONNECT TO MINT"}
+                  {walletConnected ? t("detail_mint_btn") : t("wallet_connect")}
                 </button>
               ) : (
                 <button
                   disabled
-                  className="flex-1 py-3 bg-gray-200 text-gray-400 font-bold border-2 border-transparent cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-gray-200 text-gray-400 font-bold border-2 border-transparent cursor-not-allowed flex items-center justify-center gap-2 uppercase"
                   data-oid="8pocq7b"
                 >
                   <Activity className="w-5 h-5" data-oid="z7isj7p" />
-                  ALREADY MINTED
+                  {t("status_minted")}
                 </button>
               )}
 
               <button
                 onClick={() => {
-                  if (confirm("Permanently decompose this specimen?")) {
+                  if (confirm(t("detail_delete_confirm"))) {
                     onDelete(specimen.id);
                     onClose();
                   }
                 }}
                 className="px-4 bg-white border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-colors"
-                title="Delete Specimen"
+                title={t("detail_delete_btn")}
                 data-oid="pjfxtu7"
               >
                 <Trash2 className="w-5 h-5" data-oid="3o5del9" />

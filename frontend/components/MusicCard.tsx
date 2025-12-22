@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from "../contexts/LanguageContext";
 import { Leaf, Users, TrendingUp, Music, Zap, Dna, MessageCircle } from 'lucide-react';
 import { MarketListing } from '../types';
 
@@ -8,6 +9,7 @@ interface MusicCardProps {
 }
 
 const MusicCard: React.FC<MusicCardProps> = ({ listing, onClick }) => {
+  const { t } = useLanguage();
   const { specimen, creatorName, pricePerShare, totalShares, soldShares, genre } = listing;
   const availableShares = totalShares - soldShares;
   const soldPercentage = (soldShares / totalShares) * 100;
@@ -41,12 +43,12 @@ const MusicCard: React.FC<MusicCardProps> = ({ listing, onClick }) => {
         
         {/* 架构类型标签 */}
         <div className="absolute top-2 left-2 bg-riso-green text-white text-[10px] font-bold px-2 py-1 border border-black uppercase">
-          {specimen.dna.growthArchitecture.replace('_', ' ')}
+          {t(specimen.dna.growthArchitecture as any) || specimen.dna.growthArchitecture.replace('_', ' ')}
         </div>
         
         {/* 心情标签 */}
         <div className="absolute top-2 right-2 bg-riso-pink text-white text-[10px] font-bold px-2 py-1 border border-black uppercase">
-          {specimen.dna.mood}
+          {t(specimen.dna.mood as any) || specimen.dna.mood}
         </div>
 
         {/* 内容指示器 */}
@@ -95,17 +97,17 @@ const MusicCard: React.FC<MusicCardProps> = ({ listing, onClick }) => {
         </div>
         
         {/* 统计信息 */}
-        <div className="flex items-center gap-3 text-[10px] text-gray-500">
+        <div className="flex items-center gap-3 text-[10px] text-gray-500 uppercase">
           <span className="flex items-center gap-1">
             <Users className="w-3 h-3" />
-            {soldShares} collectors
+            {soldShares} {t("market_stats_botanists")}
           </span>
         </div>
         
         {/* 价格和份额 */}
-        <div className="border-t border-dashed border-gray-300 pt-3">
+        <div className="border-t border-dashed border-gray-300 pt-3 uppercase">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-[10px] font-bold text-gray-400">PRICE PER SHARE</span>
+            <span className="text-[10px] font-bold text-gray-400">{t("mint_price_per_share")}</span>
             <span className="font-bold text-riso-green flex items-center gap-1">
               <Zap className="w-3 h-3" />
               {pricePerShare.toFixed(3)} ZETA
@@ -129,12 +131,12 @@ const MusicCard: React.FC<MusicCardProps> = ({ listing, onClick }) => {
         
         {/* 购买按钮 */}
         <button
-          className="w-full py-2 bg-riso-black text-white font-bold text-xs 
+          className="w-full py-2 bg-riso-black text-white font-bold text-xs uppercase
                      border-2 border-transparent hover:bg-riso-green hover:border-black
                      transition-all flex items-center justify-center gap-2"
         >
           <TrendingUp className="w-3 h-3" />
-          COLLECT SPECIMEN
+          {t("market_buy_btn_short")}
         </button>
       </div>
     </div>

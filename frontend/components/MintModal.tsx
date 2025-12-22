@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useLanguage } from "../contexts/LanguageContext";
 import {
   X,
   Check,
@@ -47,6 +48,7 @@ const MintModal: React.FC<MintModalProps> = ({
   walletAddress,
   isMinting,
 }) => {
+  const { t } = useLanguage();
   const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
   // 0: Curate, 1: Uploading IPFS, 2: Signing Wallet, 3: Success
 
@@ -123,10 +125,10 @@ const MintModal: React.FC<MintModalProps> = ({
           <div className="flex items-center gap-2" data-oid="x3_7w3k">
             <Cpu className="w-5 h-5" data-oid="xu7ibox" />
             <h2
-              className="font-bold font-mono text-lg tracking-widest"
+              className="font-bold font-mono text-lg tracking-widest uppercase"
               data-oid="a_:7dyx"
             >
-              MINT_TERMINAL_v1
+              {t("mint_title")}
             </h2>
           </div>
           <button
@@ -156,11 +158,10 @@ const MintModal: React.FC<MintModalProps> = ({
                   className="text-2xl font-bold text-riso-black mb-2"
                   data-oid="lj5h3ox"
                 >
-                  SPECIMEN ON-CHAIN
+                  {t("mint_success")}
                 </h3>
                 <p className="text-xs text-gray-600" data-oid="pe:1bee">
-                  Token ID #{Math.floor(Math.random() * 9999)} successfully
-                  minted.
+                  {t("mint_success_desc", { id: Math.floor(Math.random() * 9999).toString() })}
                 </p>
               </div>
               <div
@@ -171,7 +172,7 @@ const MintModal: React.FC<MintModalProps> = ({
                   className="block font-bold text-gray-500 mb-1"
                   data-oid="t3m6zj:"
                 >
-                  TRANSACTION HASH:
+                  {t("mint_tx_hash")}
                 </span>
                 {specimen.txHash ? (
                   <a
@@ -190,7 +191,7 @@ const MintModal: React.FC<MintModalProps> = ({
                 className="w-full py-3 bg-riso-black text-white font-bold hover:bg-riso-green border-2 border-transparent hover:border-black transition-all"
                 data-oid="e.loxhw"
               >
-                RETURN TO LAB
+                {t("return_to_lab")}
               </button>
             </div>
           ) : (
@@ -221,7 +222,7 @@ const MintModal: React.FC<MintModalProps> = ({
                     className="text-sm font-bold border-b-2 border-black pb-1 mb-2"
                     data-oid="-_y.tc_"
                   >
-                    CURATE ON-CHAIN ASSETS
+                    {t("mint_curate")}
                   </div>
 
                   {/* Option 1: Visuals */}
@@ -237,14 +238,14 @@ const MintModal: React.FC<MintModalProps> = ({
                       />
 
                       <div data-oid="-ddwdrt">
-                        <div className="text-xs font-bold" data-oid="itf7-1b">
-                          VISUAL SPECIMEN
+                        <div className="text-xs font-bold uppercase" data-oid="itf7-1b">
+                          {t("mint_image")}
                         </div>
                         <div
-                          className="text-[10px] text-gray-500"
+                          className="text-[10px] text-gray-500 uppercase"
                           data-oid="mkvpeya"
                         >
-                          High-res PNG (Required)
+                          {t("mint_image_desc")}
                         </div>
                       </div>
                     </div>
@@ -268,14 +269,14 @@ const MintModal: React.FC<MintModalProps> = ({
                       />
 
                       <div data-oid="9ka_7c.">
-                        <div className="text-xs font-bold" data-oid="t1-.u62">
-                          GENETIC CODE
+                        <div className="text-xs font-bold uppercase" data-oid="t1-.u62">
+                          {t("mint_dna")}
                         </div>
                         <div
-                          className="text-[10px] text-gray-500"
+                          className="text-[10px] text-gray-500 uppercase"
                           data-oid="tiupc0b"
                         >
-                          DNA Parameters as Traits
+                          {t("mint_dna_desc")}
                         </div>
                       </div>
                     </div>
@@ -309,16 +310,16 @@ const MintModal: React.FC<MintModalProps> = ({
                       />
 
                       <div data-oid=":mevg5-">
-                        <div className="text-xs font-bold" data-oid="p:gjori">
-                          GENERATIVE MUSIC
+                        <div className="text-xs font-bold uppercase" data-oid="p:gjori">
+                          {t("mint_music")}
                         </div>
                         <div
-                          className="text-[10px] text-gray-500"
+                          className="text-[10px] text-gray-500 uppercase"
                           data-oid="-hiuac_"
                         >
                           {specimen.audioData
-                            ? "Include Audio (MP3)"
-                            : "No recording available"}
+                            ? t("mint_music_desc")
+                            : t("no_specimens")}
                         </div>
                       </div>
                     </div>
@@ -352,16 +353,16 @@ const MintModal: React.FC<MintModalProps> = ({
                       />
 
                       <div data-oid="n2fk93k">
-                        <div className="text-xs font-bold" data-oid="3chtqe4">
-                          VOICE REFLECTION
+                        <div className="text-xs font-bold uppercase" data-oid="3chtqe4">
+                          {t("mint_voice")}
                         </div>
                         <div
-                          className="text-[10px] text-gray-500"
+                          className="text-[10px] text-gray-500 uppercase"
                           data-oid="o4jc:7:"
                         >
                           {specimen.reflectionAudioData
-                            ? "Include Reflection"
-                            : "No reflection available"}
+                            ? t("mint_voice_desc")
+                            : t("no_specimens")}
                         </div>
                       </div>
                     </div>
@@ -381,10 +382,10 @@ const MintModal: React.FC<MintModalProps> = ({
                   {/* Market Listing Section */}
                   <div className="border-t-2 border-dashed border-gray-300 pt-3 mt-3">
                     <div
-                      className="text-sm font-bold border-b-2 border-black pb-1 mb-3 flex items-center gap-2"
+                      className="text-sm font-bold border-b-2 border-black pb-1 mb-3 flex items-center gap-2 uppercase"
                     >
                       <Store className="w-4 h-4 text-riso-green" />
-                      LIST ON MARKETPLACE
+                      {t("mint_market_list")}
                     </div>
 
                     {/* Toggle Market Listing */}
@@ -396,11 +397,11 @@ const MintModal: React.FC<MintModalProps> = ({
                       <div className="flex items-center gap-3">
                         <Zap className={`w-5 h-5 ${listingOptions.listOnMarket ? "text-riso-green" : "text-gray-400"}`} />
                         <div>
-                          <div className="text-xs font-bold">
-                            SELL ROYALTY SHARES
+                          <div className="text-xs font-bold uppercase">
+                            {t("mint_sell_shares")}
                           </div>
-                          <div className="text-[10px] text-gray-500">
-                            Allow others to purchase ownership shares
+                          <div className="text-[10px] text-gray-500 uppercase">
+                            {t("mint_sell_shares_desc")}
                           </div>
                         </div>
                       </div>
@@ -419,8 +420,8 @@ const MintModal: React.FC<MintModalProps> = ({
                         <div className="grid grid-cols-2 gap-3">
                           {/* Price per Share */}
                           <div>
-                            <label className="text-[10px] font-bold text-gray-500 block mb-1">
-                              PRICE PER SHARE (ZETA)
+                            <label className="text-[10px] font-bold text-gray-500 block mb-1 uppercase">
+                              {t("mint_price_per_share")}
                             </label>
                             <div className="relative">
                               <Zap className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-riso-green" />
@@ -440,8 +441,8 @@ const MintModal: React.FC<MintModalProps> = ({
 
                           {/* Total Shares */}
                           <div>
-                            <label className="text-[10px] font-bold text-gray-500 block mb-1">
-                              TOTAL SHARES
+                            <label className="text-[10px] font-bold text-gray-500 block mb-1 uppercase">
+                              {t("mint_total_shares")}
                             </label>
                             <div className="relative">
                               <Users className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-riso-blue" />
@@ -464,15 +465,15 @@ const MintModal: React.FC<MintModalProps> = ({
                         </div>
 
                         {/* Summary */}
-                        <div className="bg-riso-black text-white p-2 text-xs font-mono flex justify-between">
-                          <span>Total Value:</span>
+                        <div className="bg-riso-black text-white p-2 text-xs font-mono flex justify-between uppercase">
+                          <span>{t("mint_total_value")}</span>
                           <span className="text-riso-green font-bold">
                             {(listingOptions.pricePerShare * listingOptions.totalShares).toFixed(2)} ZETA
                           </span>
                         </div>
 
-                        <p className="text-[9px] text-gray-500 text-center">
-                          ⚡ Cross-chain payments powered by ZetaChain
+                        <p className="text-[9px] text-gray-500 text-center uppercase">
+                          {t("mint_zeta_cross_chain")}
                         </p>
                       </div>
                     )}
@@ -489,17 +490,17 @@ const MintModal: React.FC<MintModalProps> = ({
                   <button
                     onClick={handleMintClick}
                     disabled={isMinting}
-                    className="w-full py-4 bg-riso-pink text-white font-bold text-lg border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:translate-x-1 hover:shadow-none transition-all flex items-center justify-center gap-3"
+                    className="w-full py-4 bg-riso-pink text-white font-bold text-lg border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:translate-x-1 hover:shadow-none transition-all flex items-center justify-center gap-3 uppercase"
                     data-oid="5p2wvby"
                   >
                     <Database className="w-5 h-5" data-oid="dpo2boi" />
-                    INITIATE MINT
+                    {t("mint_initiate")}
                   </button>
                 )}
 
                 {step === 1 && (
                   <div
-                    className="flex flex-col gap-2 text-riso-blue animate-pulse"
+                    className="flex flex-col gap-2 text-riso-blue animate-pulse uppercase"
                     data-oid="q7zqg52"
                   >
                     <div
@@ -510,13 +511,13 @@ const MintModal: React.FC<MintModalProps> = ({
                         className="animate-spin w-4 h-4"
                         data-oid="zn_wqjb"
                       />
-                      UPLOADING ASSETS TO IPFS...
+                      {t("mint_uploading_ipfs")}
                     </div>
                     <div
                       className="text-[10px] font-mono text-gray-500"
                       data-oid="kwenwj0"
                     >
-                      Building Metadata JSON based on selection...
+                      {t("mint_metadata_desc")}
                     </div>
                     <div
                       className="h-2 w-full bg-gray-200 border border-black overflow-hidden"
@@ -532,7 +533,7 @@ const MintModal: React.FC<MintModalProps> = ({
 
                 {step === 2 && (
                   <div
-                    className="flex flex-col gap-2 text-riso-green"
+                    className="flex flex-col gap-2 text-riso-green uppercase"
                     data-oid="po:qv.c"
                   >
                     <div
@@ -543,10 +544,10 @@ const MintModal: React.FC<MintModalProps> = ({
                         className="animate-bounce w-4 h-4"
                         data-oid=".av84.z"
                       />
-                      AWAITING SIGNATURE...
+                      {t("mint_awaiting_sig")}
                     </div>
                     <p className="text-xs text-gray-500" data-oid="-utrnsk">
-                      Please confirm transaction in your wallet.
+                      {t("mint_sig_desc")}
                     </p>
                   </div>
                 )}
