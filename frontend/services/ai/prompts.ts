@@ -26,14 +26,14 @@ export interface PromptConfig {
 
 export const AI_PROMPTS: PromptConfig = {
   architectures: {
-    fractal_tree: "Stable, growth, history",
-    organic_vine: "Wandering, confused, flexible",
-    radial_succulent: "Focused, geometric, mandala",
-    fern_frond: "Mathematical, precise, repetitive",
-    weeping_willow: "Sad, heavy, gravity-bound",
-    alien_shrub: "Glitchy, weird, unexpected",
-    crystal_cactus: "Sharp, defensive, rigid",
-    data_blossom: "Data-visualization inspired, radial, typographic blooms"
+    fractal_tree: "Stable, growth, history - Use for: positive growth, memories, traditions, wisdom, strength, resilience, family, legacy, achievements, or anything suggesting stability and branching development",
+    organic_vine: "Wandering, confused, flexible - Use for: exploration, curiosity, uncertainty, adaptability, journey, discovery, flexibility, change, or anything suggesting organic movement and exploration",
+    radial_succulent: "Focused, geometric, mandala - Use for: meditation, concentration, balance, harmony, centeredness, spiritual, zen, mindfulness, symmetry, or anything suggesting focused energy radiating outward",
+    fern_frond: "Mathematical, precise, repetitive - Use for: patterns, order, logic, structure, rhythm, sequences, precision, organization, systematic thinking, or anything suggesting mathematical beauty and repetition",
+    weeping_willow: "Sad, heavy, gravity-bound - Use ONLY for: deep sadness, melancholy, grief, loss, heaviness, depression, sorrow, or explicitly melancholic emotions. Do NOT use for neutral, happy, or other moods",
+    alien_shrub: "Glitchy, weird, unexpected - Use for: surreal, bizarre, glitchy, digital artifacts, unexpected, strange, experimental, chaotic, unpredictable, or anything suggesting digital weirdness and surprise",
+    crystal_cactus: "Sharp, defensive, rigid - Use for: protection, boundaries, defense, sharpness, rigidity, barriers, caution, guardedness, or anything suggesting defensive structures and sharp edges",
+    data_blossom: "Data-visualization inspired, radial, typographic blooms - Use for: information, data, knowledge, networks, connections, digital age, information architecture, or anything suggesting data visualization and information flow"
   },
   analysisAspects: {
     text: [
@@ -69,14 +69,14 @@ export const AI_PROMPTS: PromptConfig = {
 
 export const AI_PROMPTS_CN = {
   architectures: {
-    fractal_tree: "稳定、成长、历史感",
-    organic_vine: "游走、灵活、流动",
-    radial_succulent: "聚焦、几何、曼陀罗",
-    fern_frond: "数学、精确、重复",
-    weeping_willow: "悲伤、沉重、下垂",
-    alien_shrub: "故障、怪异、意外",
-    crystal_cactus: "尖锐、防御、棱角",
-    data_blossom: "数据可视化风格、放射状、字体花朵"
+    fractal_tree: "稳定、成长、历史感 - 适用于：积极成长、回忆、传统、智慧、力量、韧性、家庭、传承、成就，或任何暗示稳定和分支发展的内容",
+    organic_vine: "游走、灵活、流动 - 适用于：探索、好奇心、不确定性、适应性、旅程、发现、灵活性、变化，或任何暗示有机运动和探索的内容",
+    radial_succulent: "聚焦、几何、曼陀罗 - 适用于：冥想、专注、平衡、和谐、中心感、精神性、禅意、正念、对称，或任何暗示向外辐射的聚焦能量",
+    fern_frond: "数学、精确、重复 - 适用于：模式、秩序、逻辑、结构、节奏、序列、精确、组织、系统思维，或任何暗示数学美和重复的内容",
+    weeping_willow: "悲伤、沉重、下垂 - 仅适用于：深度悲伤、忧郁、悲痛、失落、沉重、抑郁、哀伤，或明确忧郁的情绪。不要用于中性、快乐或其他情绪",
+    alien_shrub: "故障、怪异、意外 - 适用于：超现实、奇异、故障、数字艺术、意外、奇怪、实验性、混乱、不可预测，或任何暗示数字怪异和惊喜的内容",
+    crystal_cactus: "尖锐、防御、棱角 - 适用于：保护、边界、防御、尖锐、刚硬、屏障、谨慎、戒备，或任何暗示防御结构和尖锐边缘的内容",
+    data_blossom: "数据可视化风格、放射状、字体花朵 - 适用于：信息、数据、知识、网络、连接、数字时代、信息架构，或任何暗示数据可视化和信息流动的内容"
   },
   analysisAspects: {
     text: [
@@ -116,13 +116,23 @@ export function buildTextAnalysisPrompt(vibe: string, useChinese = false): strin
 
 ${aspectsList}
 
-Architectures:
+Architecture Selection Guide:
+Choose the MOST APPROPRIATE architecture based on the input's mood, energy, and characteristics. Consider the following:
+- Match the emotional tone and energy level to the architecture description
+- Vary your selections - don't always choose the same architecture
+- Consider the semantic meaning and associations of the input
+- Each architecture has specific use cases - select thoughtfully
+
+Available Architectures:
 ${architecturesList}
 
 ${prompts.schema.description}:
 ${prompts.schema.fields}
 
-Important: Return ONLY valid JSON, no markdown code blocks, no explanations.`;
+Important: 
+- Return ONLY valid JSON, no markdown code blocks, no explanations.
+- Choose the architecture that BEST matches the input's characteristics, not just the first one that seems partially relevant.
+- Vary your architecture selections based on different input types.`;
 }
 
 /**
@@ -154,6 +164,10 @@ export function buildImageAnalysisPrompt(additionalPrompt?: string, useChinese =
 
   const archTitle = useChinese ? "架构类型说明：" : "Architectures:";
 
+  const archGuide = useChinese 
+    ? "架构选择指南：根据图片的情绪、能量和特征选择最合适的架构。考虑语义含义和关联性，多样化选择，不要总是选择同一个架构。"
+    : "Architecture Selection Guide: Choose the MOST APPROPRIATE architecture based on the image's mood, energy, and characteristics. Consider semantic meaning and associations. Vary your selections - don't always choose the same architecture.";
+
   return `${intro}${contextLine}
 
 ${analyzeTitle}
@@ -162,8 +176,12 @@ ${aspectsList}
 ${basedOn}
 
 ${archTitle}
+${archGuide}
+
 ${architecturesList}
 
 ${prompts.schema.description}:
-${prompts.schema.fields}`;
+${prompts.schema.fields}
+
+Important: Choose the architecture that BEST matches the image's characteristics, and vary your selections based on different visual content.`;
 }

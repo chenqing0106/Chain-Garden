@@ -48,12 +48,12 @@ import { HelpCircle, ChevronRight, Languages } from "lucide-react";
 
 // Default DNA if no Gemini
 const DEFAULT_DNA: PlantDNA = {
-  speciesName: "Willow of Whispers",
-  description: "A melancholy specimen that weeps with the bassline.",
-  growthArchitecture: "weeping_willow",
+  speciesName: "Alien Shrub",
+  description: "An otherworldly specimen with glitched growth patterns and unexpected forms.",
+  growthArchitecture: "alien_shrub",
   branchingFactor: 0.8,
   angleVariance: 45,
-  colorPalette: ["#1a1a1a", "#0078bf", "#ff48b0"],
+  colorPalette: ["#1a1a1a", "#F566B8", "#93D133"],
   leafShape: "needle",
   leafArrangement: "alternate",
   growthSpeed: 1.2,
