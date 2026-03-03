@@ -265,7 +265,7 @@ export const createMetadataFromSpecimen = (
   const reflectionAudioLink = toMetadataMediaLink(media?.reflectionAudio);
 
   let attributes: MetadataAttribute[] = [];
-  let dnaData = dna;
+  let dnaData: PlantDNA | undefined = dna;
   let reflectionQuestion: string | undefined = specimen.reflectionQuestion;
 
   // 如果 includeDNA 为 false，attributes 和 dna 都为空
@@ -314,8 +314,8 @@ export const createMetadataFromSpecimen = (
       },
     ];
   } else {
-    // 不包含 DNA 时，清空 dnaData
-    dnaData = {} as Specimen['dna']; // 赋值为空对象
+    // 不包含 DNA 时，dnaData 置为 undefined（ChainGardenMetadata.dna 为可选字段）
+    dnaData = undefined;
     // attributes 保持空数组
   }
 
@@ -397,8 +397,6 @@ export const uploadSpecimenToIPFS = async (
   const resolvedOptions: Required<UploadOptions> = {
     ...DEFAULT_UPLOAD_OPTIONS,
     ...options,
-    includeAudio: options?.includeAudio ?? DEFAULT_UPLOAD_OPTIONS.includeAudio,
-    includeVoice: options?.includeVoice ?? DEFAULT_UPLOAD_OPTIONS.includeVoice,
   };
 
   const {
@@ -407,52 +405,26 @@ export const uploadSpecimenToIPFS = async (
     includeVoice,
   } = resolvedOptions;
 
-  // 1. 上传图片
+  // 1. 并行上传图片和音频（三者互相独立，元数据必须等全部完成后才能生成）
   const baseName = `chain-garden-${specimen.id || Date.now()}`;
-  const image = await uploadBlobToIPFS(
-    specimen.imageData,
-    `${baseName}.png`
-  );
-
-  // 可选：上传音频
-  let generativeAudio: IpfsUploadResult | undefined = undefined;
-  if (includeAudio && specimen.audioData) {
-    generativeAudio = await uploadBlobToIPFS(
-      specimen.audioData,
-      `${baseName}-generative`
-    );
-  }
-  // const generativeAudio = specimen.audioData
-  //   ? await uploadBlobToIPFS(
-  //       specimen.audioData,
-  //       `${baseName}-generative`
-  //     )
-  //   : undefined;
-
-  // 可选：上传录音
-  let reflectionAudio: IpfsUploadResult | undefined = undefined;
-  if (includeVoice && specimen.reflectionAudioData) {
-    reflectionAudio = await uploadBlobToIPFS(
-      specimen.reflectionAudioData,
-      `${baseName}-reflection`
-    );
-  }
-
-  // const reflectionAudio = specimen.reflectionAudioData
-  //   ? await uploadBlobToIPFS(
-  //       specimen.reflectionAudioData,
-  //       `${baseName}-reflection`
-  //     )
-  //   : undefined;
+  const [image, generativeAudio, reflectionAudio] = await Promise.all([
+    uploadBlobToIPFS(specimen.imageData, `${baseName}.png`),
+    includeAudio && specimen.audioData
+      ? uploadBlobToIPFS(specimen.audioData, `${baseName}-generative`)
+      : Promise.resolve(undefined),
+    includeVoice && specimen.reflectionAudioData
+      ? uploadBlobToIPFS(specimen.reflectionAudioData, `${baseName}-reflection`)
+      : Promise.resolve(undefined),
+  ]);
 
   // 2. 生成元数据
   const payload = createMetadataFromSpecimen(specimen, image.uri, {
     generativeAudio,
     reflectionAudio,
-    options: resolvedOptions, // 传递完整的选项
+    options: resolvedOptions,
   });
 
-  // 3. 上传元数据
+  // 3. 上传元数据（依赖上一步的 image.uri，必须串行）
   const metadata = await uploadMetadataToIPFS(payload);
 
   return {

@@ -161,7 +161,7 @@ const MintModal: React.FC<MintModalProps> = ({
                   {t("mint_success")}
                 </h3>
                 <p className="text-xs text-gray-600" data-oid="pe:1bee">
-                  {t("mint_success_desc", { id: Math.floor(Math.random() * 9999).toString() })}
+                  {t("mint_success_desc", { id: specimen.tokenId ?? "—" })}
                 </p>
               </div>
               <div

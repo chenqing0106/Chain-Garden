@@ -1,5 +1,5 @@
 
-import { BrowserProvider, Contract, Interface } from 'ethers';
+import { BrowserProvider, Contract, Interface, JsonRpcSigner } from 'ethers';
 
 // ChainGardenNFT Contract ABI
 // 这是一个简化版的 ABI，只包含前端需要的函数
@@ -730,7 +730,7 @@ const CONTRACT_ADDRESS = "0x9f1f04828383113e0AA95d7425ad8078Baa18F45";
 
 export class Web3Service {
   private provider: BrowserProvider | null = null;
-  private signer: any = null;
+  private signer: JsonRpcSigner | null = null;
   private pendingRequest: Promise<string> | null = null;
 
   constructor() {
@@ -833,8 +833,6 @@ export class Web3Service {
         }
         
         return "";
-      } catch (error) {
-        throw error;
       } finally {
         // Clear pending request after completion
         this.pendingRequest = null;
@@ -890,10 +888,7 @@ export class Web3Service {
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: '0x1b59' }], // ZetaChain Athens Testnet Chain ID
       });
-      
-      // 等待网络切换完成
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // 重新创建 provider 和 signer 以确保使用新网络
       this.provider = new BrowserProvider(eth);
       
@@ -931,7 +926,6 @@ export class Web3Service {
           });
           
           // 等待网络添加完成，并重新创建 provider 和 signer
-          await new Promise(resolve => setTimeout(resolve, 500));
           this.provider = new BrowserProvider(eth);
           const accounts = await eth.request({ method: 'eth_accounts' });
           if (accounts.length > 0) {
@@ -988,44 +982,24 @@ export class Web3Service {
     if (!this.signer) throw new Error("Wallet not connected");
 
     try {
-      // 1. 确保网络正确
-      await this.ensureNetworkAndGetContract();
-      
-      // 2. 确保使用最新的 signer 重新创建合约实例（重要：确保 signer 是最新的）
-      if (!this.provider || !this.signer) {
-        throw new Error("Wallet not connected");
-      }
-      
-      // 重新获取 signer 以确保是最新的
-      const currentSigner = await this.provider.getSigner();
-      this.signer = currentSigner;
-      
-      // 使用最新的 signer 创建合约实例
-      const contract = new Contract(CONTRACT_ADDRESS, CHAIN_GARDEN_NFT_ABI, this.signer);
-      
-      // 3. 获取 mintPrice（如果失败则使用 0）
+      // 1. 确保网络正确，复用返回的合约实例
+      const contract = await this.ensureNetworkAndGetContract();
+
+      // 2. 获取 mintPrice（如果失败则使用 0）
       let mintPrice = 0n;
       try {
         mintPrice = await contract.mintPrice();
       } catch (error: any) {
         mintPrice = 0n;
       }
-      
-      // 4. 调用 mint 函数，传入元数据，触发 MetaMask 弹窗
-      // 使用 populateTransaction + sendTransaction 确保触发 MetaMask 弹窗
-      const populatedTx = await contract.mint.populateTransaction(metadataURI, { value: mintPrice });
-      
-      // 使用 signer.sendTransaction 直接发送交易，这会触发 MetaMask 弹窗
-      const tx = await this.signer.sendTransaction({
-        to: CONTRACT_ADDRESS,
-        data: populatedTx.data,
-        value: mintPrice
-      });
-      
-      // 5. 等待交易确认
+
+      // 3. 调用 mint 函数，传入元数据，触发 MetaMask 弹窗
+      const tx = await contract.mint(metadataURI, { value: mintPrice });
+
+      // 4. 等待交易确认
       const receipt = await tx.wait();
-      
-      // 6. 从事件日志中获取 tokenId
+
+      // 5. 从事件日志中获取 tokenId
       // 合约会发出 PlantMinted 事件，我们可以从中获取 tokenId
       let tokenId = "";
       

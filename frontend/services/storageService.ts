@@ -8,6 +8,7 @@ import { Specimen } from '../types';
 const STORAGE_PREFIX = 'chainGarden_';
 const GLOBAL_COLLECTION_KEY = `${STORAGE_PREFIX}global_collection`;
 const WALLET_MAPPING_KEY = `${STORAGE_PREFIX}wallet_mapping`;
+const ANONYMOUS_COLLECTION_KEY = `${STORAGE_PREFIX}anonymous`;
 
 export interface WalletMapping {
   [walletAddress: string]: string[]; // wallet -> specimen IDs
@@ -195,12 +196,11 @@ export class StorageService {
 
   private static getAnonymousCollection(): Specimen[] {
     try {
-      const anonymousKey = `${STORAGE_PREFIX}anonymous`;
-      const data = localStorage.getItem(anonymousKey);
+      const data = localStorage.getItem(ANONYMOUS_COLLECTION_KEY);
       const anonymousIds: string[] = data ? JSON.parse(data) : [];
-      
+      const idSet = new Set(anonymousIds);
       const globalCollection = this.getGlobalCollection();
-      return globalCollection.filter(s => anonymousIds.includes(s.id));
+      return globalCollection.filter(s => idSet.has(s.id));
     } catch (e) {
       return [];
     }
@@ -208,11 +208,10 @@ export class StorageService {
 
   private static addToAnonymousCollection(specimenId: string): void {
     try {
-      const anonymousKey = `${STORAGE_PREFIX}anonymous`;
-      const data = localStorage.getItem(anonymousKey);
+      const data = localStorage.getItem(ANONYMOUS_COLLECTION_KEY);
       const anonymousIds: string[] = data ? JSON.parse(data) : [];
       anonymousIds.unshift(specimenId);
-      localStorage.setItem(anonymousKey, JSON.stringify(anonymousIds));
+      localStorage.setItem(ANONYMOUS_COLLECTION_KEY, JSON.stringify(anonymousIds));
     } catch (e) {
       console.error('Failed to add to anonymous collection:', e);
     }
@@ -220,11 +219,10 @@ export class StorageService {
 
   private static removeFromAnonymousCollection(specimenId: string): void {
     try {
-      const anonymousKey = `${STORAGE_PREFIX}anonymous`;
-      const data = localStorage.getItem(anonymousKey);
+      const data = localStorage.getItem(ANONYMOUS_COLLECTION_KEY);
       const anonymousIds: string[] = data ? JSON.parse(data) : [];
       const updated = anonymousIds.filter(id => id !== specimenId);
-      localStorage.setItem(anonymousKey, JSON.stringify(updated));
+      localStorage.setItem(ANONYMOUS_COLLECTION_KEY, JSON.stringify(updated));
     } catch (e) {
       console.error('Failed to remove from anonymous collection:', e);
     }
@@ -232,16 +230,15 @@ export class StorageService {
 
   private static clearAnonymousCollection(): void {
     try {
-      const anonymousKey = `${STORAGE_PREFIX}anonymous`;
-      const anonymousIds = this.getAnonymousCollection().map(s => s.id);
-      
-      // Remove from global collection
+      const raw = localStorage.getItem(ANONYMOUS_COLLECTION_KEY);
+      const anonymousIds: string[] = raw ? JSON.parse(raw) : [];
+      if (anonymousIds.length === 0) return;
+
+      const idSet = new Set(anonymousIds);
       const globalCollection = this.getGlobalCollection();
-      const updatedGlobal = globalCollection.filter(s => !anonymousIds.includes(s.id));
+      const updatedGlobal = globalCollection.filter(s => !idSet.has(s.id));
       localStorage.setItem(GLOBAL_COLLECTION_KEY, JSON.stringify(updatedGlobal));
-      
-      // Clear anonymous list
-      localStorage.removeItem(anonymousKey);
+      localStorage.removeItem(ANONYMOUS_COLLECTION_KEY);
     } catch (e) {
       console.error('Failed to clear anonymous collection:', e);
     }
@@ -275,8 +272,7 @@ export class StorageService {
         mapping[normalizedAddress] = specimenIds;
         localStorage.setItem(WALLET_MAPPING_KEY, JSON.stringify(mapping));
       } else {
-        const anonymousKey = `${STORAGE_PREFIX}anonymous`;
-        localStorage.setItem(anonymousKey, JSON.stringify(specimenIds));
+        localStorage.setItem(ANONYMOUS_COLLECTION_KEY, JSON.stringify(specimenIds));
       }
       
       // Remove old key

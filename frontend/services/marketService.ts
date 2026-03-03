@@ -190,7 +190,7 @@ class MarketService {
 
   // 获取所有公开上架的作品
   getAllListings(): MarketListing[] {
-    return this.listings.sort((a, b) => b.listedAt - a.listedAt);
+    return [...this.listings].sort((a, b) => b.listedAt - a.listedAt);
   }
 
   // 按类型筛选
