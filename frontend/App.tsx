@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import {
   Mic,
   Disc,
@@ -28,23 +28,21 @@ import {
   Store,
   ShoppingCart,
 } from "lucide-react";
-import { AudioAnalyzer } from "./services/audioService";
-import { PlantMusicService } from "./services/plantMusicService";
-import { demoAudioService, DEMO_PRESETS, DemoPreset } from "./services/demoAudioService";
+import { DEMO_PRESETS, DemoPreset } from "./services/demoAudioService";
 import { aiService } from "./services/ai";
-import { Web3Service } from "./services/web3Service";
-import { StorageService } from "./services/storageService";
-import { marketService } from "./services/marketService";
 import PlantCanvas from "./components/PlantCanvas";
-import MintModal, { AssetSelection, ListingOptions } from "./components/MintModal";
+import MintModal from "./components/MintModal";
 import SpecimenDetailModal from "./components/SpecimenDetailModal";
 import Marketplace from "./components/Marketplace";
 import PurchaseModal from "./components/PurchaseModal";
 import GuideModal from "./components/GuideModal";
 import { LanguageProvider, useLanguage } from "./contexts/LanguageContext";
-import { PlantDNA, Specimen, AudioSource, LabState, BioState, MarketListing } from "./types";
-import { uploadSpecimenToIPFS } from "./services/ipfsService";
+import { PlantDNA, Specimen, LabState, BioState } from "./types";
 import { HelpCircle, ChevronRight, Languages } from "lucide-react";
+import { useWallet } from "./hooks/useWallet";
+import { useAudio } from "./hooks/useAudio";
+import { useMarket } from "./hooks/useMarket";
+import { useSpecimenCollection } from "./hooks/useSpecimenCollection";
 
 // Default DNA if no Gemini
 const DEFAULT_DNA: PlantDNA = {
@@ -72,593 +70,42 @@ const ARCHITECTURES = [
   "data_blossom",
 ];
 
-const REFLECTION_QUESTIONS = [
-  "What are you holding onto that you need to let go of?",
-  "Describe a moment where you felt truly at peace.",
-  "What does your silence sound like today?",
-  "Who do you wish you could speak to right now?",
-  "What color is your current emotion?",
-  "What is growing inside you that needs nourishment?",
-  "If this plant could hear your secrets, what would you say?",
-  "What is a memory that makes you smile?",
-  "What are you afraid to say out loud?",
-];
-
 const AppContent: React.FC = () => {
   const { language, setLanguage, t } = useLanguage();
-  // --- STATE MANAGEMENT ---
+
+  // --- Lab State (cannot be归入 any single hook) ---
   const [labState, setLabState] = useState<LabState>("EMPTY");
   const [bioState, setBioState] = useState<BioState>({ stress: 0, energy: 0 });
-
-  // Audio State
-  const [analyzer, setAnalyzer] = useState<AudioSource | null>(null);
-  const [inputMode, setInputMode] = useState<
-    "mic" | "file" | "reflection" | "demo" | "none"
-  >("none");
-  const [isListening, setIsListening] = useState(false);
-  const [isPlayingFile, setIsPlayingFile] = useState(false);
-  
-  // Demo Audio State
-  const [isDemoPlaying, setIsDemoPlaying] = useState(false);
-  const [currentDemoPreset, setCurrentDemoPreset] = useState<DemoPreset>("balanced_music");
-
-  // Reflection State
-  const [reflectionQuestion, setReflectionQuestion] = useState(
-    REFLECTION_QUESTIONS[0],
-  );
-  const [reflectionBlob, setReflectionBlob] = useState<Blob | null>(null);
-  const [isRecordingReflection, setIsRecordingReflection] = useState(false);
-  const reflectionRecorderRef = useRef<MediaRecorder | null>(null);
-
-  // Output State (Plant Voice)
-  const [isSinging, setIsSinging] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
-
-  // Visualizer Ref
-  const visualizerCanvasRef = useRef<HTMLCanvasElement>(null);
-
-  // Services Refs
-  const audioAnalyzerRef = useRef<AudioAnalyzer>(new AudioAnalyzer());
-  const plantMusicRef = useRef<PlantMusicService>(new PlantMusicService());
-  const web3ServiceRef = useRef<Web3Service>(new Web3Service());
-
   const [dna, setDna] = useState<PlantDNA>(DEFAULT_DNA);
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isManualMode, setIsManualMode] = useState(false);
 
-  // Initialize collection - will be loaded after wallet check
-  const [collection, setCollection] = useState<Specimen[]>([]);
-
-  const [triggerSnapshot, setTriggerSnapshot] = useState(false);
-  const [showGallery, setShowGallery] = useState(false);
-  const [lastSavedId, setLastSavedId] = useState<string | null>(null);
-
-  // Web3 & Minting State
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [showMintModal, setShowMintModal] = useState(false);
-  const [mintTargetSpecimen, setMintTargetSpecimen] = useState<Specimen | null>(
-    null,
-  );
-  const [isMinting, setIsMinting] = useState(false);
-
-  // Detail Modal State
-  const [selectedSpecimen, setSelectedSpecimen] = useState<Specimen | null>(
-    null,
-  );
-
-  // Marketplace State
-  const [showMarketplace, setShowMarketplace] = useState(false);
-  const [selectedListing, setSelectedListing] = useState<MarketListing | null>(null);
-  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
-  const [isPurchasing, setIsPurchasing] = useState(false);
-  const [marketRefreshKey, setMarketRefreshKey] = useState(0);
-
-  const [showGuide, setShowGuide] = useState(false);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Image Upload State (for multimodal AI)
+  // --- Image Upload State (for multimodal AI) ---
   const [uploadedImage, setUploadedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
-  // Initial check for wallet and load collection
-  useEffect(() => {
-    const initWeb3 = async () => {
-      try {
-        // Silent connect attempt
-        const addr = await web3ServiceRef.current.connectWallet(true);
-        if (addr) {
-          setWalletAddress(addr);
-          // Migrate old storage if exists
-          StorageService.migrateOldStorage(addr);
-          // Load wallet-specific collection
-          const walletCollection = StorageService.getWalletCollection(addr);
-          setCollection(walletCollection);
-        } else {
-          // No wallet connected, load anonymous collection
-          StorageService.migrateOldStorage(null);
-          const anonCollection = StorageService.getWalletCollection(null);
-          setCollection(anonCollection);
-        }
-      } catch (e) {
-        // Silent fail if not connected, load anonymous collection
-        StorageService.migrateOldStorage(null);
-        const anonCollection = StorageService.getWalletCollection(null);
-        setCollection(anonCollection);
-      }
-    };
-    // setTimeout to allow window.ethereum to inject
-    setTimeout(initWeb3, 500);
-  }, []);
+  // --- UI State ---
+  const [selectedSpecimen, setSelectedSpecimen] = useState<Specimen | null>(null);
+  const [showGuide, setShowGuide] = useState(false);
 
-  // Visualizer Loop
-  useEffect(() => {
-    let animId: number;
-    const drawVisualizer = () => {
-      if (!visualizerCanvasRef.current) return;
-      const cvs = visualizerCanvasRef.current;
-      const ctx = cvs.getContext("2d");
-      if (!ctx) return;
+  // --- Domain Hooks ---
+  const wallet = useWallet();
+  const audio = useAudio(dna, bioState);
+  const spec = useSpecimenCollection({
+    walletAddress: wallet.walletAddress,
+    walletInitialized: wallet.walletInitialized,
+    web3Service: wallet.web3Service,
+    connectWallet: wallet.connectWallet,
+  });
+  const market = useMarket({ walletAddress: wallet.walletAddress });
 
-      // Clear
-      ctx.clearRect(0, 0, cvs.width, cvs.height);
-      ctx.fillStyle = "#111"; // Dark bg
-      ctx.fillRect(0, 0, cvs.width, cvs.height);
+  // --- Cross-domain functions (kept in App.tsx) ---
 
-      // Draw Baseline Grid
-      ctx.strokeStyle = "#222";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(0, cvs.height / 2);
-      ctx.lineTo(cvs.width, cvs.height / 2);
-      ctx.stroke();
-
-      if (!isListening) {
-        ctx.fillStyle = "#444";
-        ctx.font = "10px monospace";
-        ctx.fillText("SIGNAL: OFF", 10, 28);
-        animId = requestAnimationFrame(drawVisualizer);
-        return;
-      }
-
-      const { raw } = audioAnalyzerRef.current.getFrequencyData();
-      if (raw.length === 0) {
-        animId = requestAnimationFrame(drawVisualizer);
-        return;
-      }
-
-      const barWidth = (cvs.width / raw.length) * 2.5;
-      let x = 0;
-
-      for (let i = 0; i < raw.length; i++) {
-        const barHeight = (raw[i] / 255) * cvs.height;
-        ctx.fillStyle = `rgb(0, 166, 81)`;
-        ctx.fillRect(x, cvs.height - barHeight, barWidth, barHeight);
-        x += barWidth + 1;
-      }
-      animId = requestAnimationFrame(drawVisualizer);
-    };
-    drawVisualizer();
-    return () => cancelAnimationFrame(animId);
-  }, [isListening, analyzer]);
-
-  const connectWallet = async () => {
-    try {
-      const addr = await web3ServiceRef.current.connectWallet(false);
-
-      if (!addr) {
-        console.log("No wallet address returned");
-        return;
-      }
-
-      setWalletAddress(addr);
-      await web3ServiceRef.current.switchNetworkToZetaChain();
-
-      // Transfer anonymous specimens to wallet
-      StorageService.transferAnonymousToWallet(addr);
-
-      // Reload collection with wallet data
-      const walletCollection = StorageService.getWalletCollection(addr);
-      setCollection(walletCollection);
-    } catch (e: any) {
-      console.error("Wallet connection error:", e);
-
-      // User rejected the request
-      if (e.code === 4001) {
-        console.log("User rejected wallet connection");
-        return;
-      }
-
-      // Request already pending
-      if (e.code === -32002) {
-        alert(t("meta_request_pending"));
-        return;
-      }
-
-      const msg = e.message || "";
-
-      // MetaMask not installed
-      if (
-        msg.includes("MetaMask not found") ||
-        msg.includes("extension") ||
-        msg.includes("install")
-      ) {
-        const install = confirm(t("meta_not_found"));
-        if (install) window.open("https://metamask.io/download/", "_blank");
-      }
-      // Other errors
-      else {
-        alert(t("connect_wallet") + " failed: " + msg);
-      }
-    }
-  };
-
-  const disconnectWallet = () => {
-    web3ServiceRef.current.disconnectWallet();
-    setWalletAddress(null);
-    
-    // Load anonymous collection after disconnection
-    const anonCollection = StorageService.getWalletCollection(null);
-    setCollection(anonCollection);
-    
-    console.log("Wallet disconnected");
-  };
-
-  const reconnectWallet = async () => {
-    try {
-      // First disconnect
-      disconnectWallet();
-      
-      // Wait a bit for cleanup and MetaMask to process disconnection
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Then reconnect with force flag to clear any pending requests
-      const addr = await web3ServiceRef.current.connectWallet(false, true);
-
-      if (!addr) {
-        console.log("No wallet address returned");
-        return;
-      }
-
-      setWalletAddress(addr);
-      await web3ServiceRef.current.switchNetworkToZetaChain();
-
-      // Transfer anonymous specimens to wallet
-      StorageService.transferAnonymousToWallet(addr);
-
-      // Reload collection with wallet data
-      const walletCollection = StorageService.getWalletCollection(addr);
-      setCollection(walletCollection);
-    } catch (e: any) {
-      console.error("Reconnection error:", e);
-      
-      // User rejected the request
-      if (e.code === 4001) {
-        console.log("User rejected wallet reconnection");
-        return;
-      }
-
-      // Request already pending - this should be handled better now
-      if (e.code === -32002 || e.message?.includes("待处理的连接请求")) {
-        alert(
-          "请检查 MetaMask - 已有待处理的连接请求。\n\n" +
-          "如果 MetaMask 中没有弹窗，请：\n" +
-          "1. 刷新页面后重试\n" +
-          "2. 或者在 MetaMask 中手动切换账户"
-        );
-        return;
-      }
-
-      const msg = e.message || "";
-      alert("重新连接失败: " + msg);
-    }
-  };
-
-  const handleWalletButtonClick = async () => {
-    if (walletAddress) {
-      // If already connected, show options
-      const action = confirm(t("reconnect_wallet_msg", { address: walletAddress }));
-      
-      if (action) {
-        // Reconnect
-        await reconnectWallet();
-      } else {
-        // Disconnect
-        disconnectWallet();
-      }
-    } else {
-      // Not connected, connect normally
-      await connectWallet();
-    }
-  };
-
-  const resetAllAudio = () => {
-    audioAnalyzerRef.current.cleanup();
-    plantMusicRef.current.stop();
-    setIsListening(false);
-    setIsPlayingFile(false);
-    setIsSinging(false);
-    setIsRecording(false);
-    setRecordedBlob(null);
-    setInputMode("none");
-    setAnalyzer(null);
-
-    // Clean reflection
-    if (
-      reflectionRecorderRef.current &&
-      reflectionRecorderRef.current.state === "recording"
-    ) {
-      reflectionRecorderRef.current.stop();
-    }
-    setReflectionBlob(null);
-    setIsRecordingReflection(false);
-  };
-
-  const handleAudioInputToggle = async (
-    mode: "mic" | "file" | "reflection",
-  ) => {
-    // 如果当前是 demo 模式，先停止
-    if (isDemoPlaying) {
-      demoAudioService.stop();
-      setIsDemoPlaying(false);
-    }
-    
-    if (isListening) {
-      audioAnalyzerRef.current.cleanup();
-      setIsListening(false);
-      setIsPlayingFile(false);
-    }
-
-    // Clean up reflection if switching away
-    if (inputMode === "reflection" && mode !== "reflection") {
-      setReflectionBlob(null);
-      setIsRecordingReflection(false);
-    }
-
-    if (inputMode === mode && isListening) {
-      setInputMode("none");
-      setAnalyzer(null);
-      return;
-    }
-
-    setInputMode(mode);
-
-    if (mode === "mic" || mode === "reflection") {
-      // Reflection uses Mic input visually as well
-      try {
-        await audioAnalyzerRef.current.startMicrophone();
-        setAnalyzer(audioAnalyzerRef.current);
-        setIsListening(true);
-      } catch (e) {
-        console.error(e);
-        alert("Audio input access failed.");
-        setInputMode("none");
-      }
-    } else {
-      setTimeout(() => {
-        if (fileInputRef.current) {
-          fileInputRef.current.value = "";
-          fileInputRef.current.click();
-        }
-      }, 0);
-    }
-  };
-
-  // DEMO AUDIO TOGGLE
-  const handleDemoToggle = (preset?: DemoPreset) => {
-    // 如果正在使用其他音频源，先停止
-    if (isListening) {
-      audioAnalyzerRef.current.cleanup();
-      setIsListening(false);
-      setIsPlayingFile(false);
-    }
-    
-    if (isDemoPlaying && !preset) {
-      // 停止 demo
-      demoAudioService.stop();
-      setIsDemoPlaying(false);
-      setInputMode("none");
-      setAnalyzer(null);
-    } else {
-      // 启动或切换 demo 预设
-      if (preset) {
-        setCurrentDemoPreset(preset);
-        demoAudioService.setPreset(preset);
-      }
-      demoAudioService.start();
-      setIsDemoPlaying(true);
-      setInputMode("demo");
-      setAnalyzer(demoAudioService);
-    }
-  };
-
-  // REFLECTION (VOICE) LOGIC
-  const cycleQuestion = () => {
-    const idx = Math.floor(Math.random() * REFLECTION_QUESTIONS.length);
-    setReflectionQuestion(REFLECTION_QUESTIONS[idx]);
-  };
-
-  const discardReflection = () => {
-    setReflectionBlob(null);
-    setIsRecordingReflection(false);
-  };
-
-  const toggleReflectionRecording = async () => {
-    if (isRecordingReflection) {
-      // STOP
-      if (
-        reflectionRecorderRef.current &&
-        reflectionRecorderRef.current.state === "recording"
-      ) {
-        reflectionRecorderRef.current.stop();
-      }
-      setIsRecordingReflection(false);
-      // Don't stop visuals yet, let user see the plant pulsing
-    } else {
-      // START
-      setReflectionBlob(null);
-      try {
-        // We need a stream for recording.
-        // AudioAnalyzer has one but it's encapsulated. Requesting a new one for simple logic.
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-        });
-        const recorder = new MediaRecorder(stream);
-        const chunks: BlobPart[] = [];
-
-        recorder.ondataavailable = (e) => chunks.push(e.data);
-        recorder.onstop = () => {
-          const blob = new Blob(chunks, { type: "audio/webm" });
-          setReflectionBlob(blob);
-        };
-
-        recorder.start();
-        reflectionRecorderRef.current = recorder;
-        setIsRecordingReflection(true);
-
-        // Ensure visuals are on
-        if (!isListening) {
-          await audioAnalyzerRef.current.startMicrophone();
-          setAnalyzer(audioAnalyzerRef.current);
-          setIsListening(true);
-        }
-      } catch (e) {
-        console.error("Reflection recording failed", e);
-      }
-    }
-  };
-
-  const handleSonify = async () => {
-    if (isSinging) {
-      await plantMusicRef.current.stop();
-      setIsSinging(false);
-      setIsRecording(false);
-      setRecordedBlob(null); // Clear unsaved recording
-    } else {
-      await plantMusicRef.current.play(dna);
-      plantMusicRef.current.updateBioState(bioState);
-      setIsSinging(true);
-    }
-  };
-
-  // MUSIC RECORDING HANDLER
-  const toggleRecording = async () => {
-    if (isRecording) {
-      const blob = await plantMusicRef.current.stopRecording();
-      setRecordedBlob(blob);
-      setIsRecording(false);
-    } else {
-      setRecordedBlob(null); // Clear previous if restarting
-      await plantMusicRef.current.startRecording();
-      setIsRecording(true);
-    }
-  };
-
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      audioAnalyzerRef.current.cleanup();
-      const file = e.target.files[0];
-      await audioAnalyzerRef.current.startFile(file);
-      setAnalyzer(audioAnalyzerRef.current);
-      setInputMode("file");
-      setIsListening(true);
-      setIsPlayingFile(true);
-    }
-  };
-
-  const toggleFilePlayback = () => {
-    if (analyzer && inputMode === "file") {
-      audioAnalyzerRef.current.togglePlayback();
-      setIsPlayingFile(!isPlayingFile);
-    }
-  };
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Image size must be less than 5MB");
-      return;
-    }
-
-    if (!file.type.startsWith("image/")) {
-      alert("Please upload a valid image file");
-      return;
-    }
-
-    setUploadedImage(file);
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const clearImage = () => {
-    setUploadedImage(null);
-    setImagePreview(null);
-    if (imageInputRef.current) {
-      imageInputRef.current.value = "";
-    }
-  };
-
-  const handleGenerateDNA = async () => {
-    if (!prompt.trim() && !uploadedImage) return;
-    setIsGenerating(true);
-    try {
-      let newDna: PlantDNA;
-
-      if (uploadedImage) {
-        newDna = await aiService.generatePlantDNAFromImage(
-          uploadedImage,
-          prompt.trim() || undefined,
-        );
-      } else {
-        newDna = await aiService.generatePlantDNA(prompt);
-      }
-
-      setDna(newDna);
-      setIsManualMode(false);
-      setLabState("SYNTHESIZED");
-      clearImage();
-    } catch (e) {
-      console.error(e);
-      alert("Failed to analyze. Using cached seed.");
-      setLabState("SYNTHESIZED");
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const confirmGrowth = () => {
-    setLabState("GROWING");
-    if (isSinging) {
-      plantMusicRef.current.play(dna);
-    }
-  };
-
-  const discardSeed = () => {
-    setLabState("EMPTY");
-    setPrompt("");
-  };
-
-  const handleDnaChange = (field: keyof PlantDNA, value: any) => {
-    const newDna = { ...dna, [field]: value };
-    setDna(newDna);
-    if (isSinging) {
-      plantMusicRef.current.play(newDna);
-    }
-  };
-
-  const handleColorChange = (index: number, newColor: string) => {
-    const updatedPalette = [...dna.colorPalette];
-    updatedPalette[index] = newColor;
-    handleDnaChange("colorPalette", updatedPalette);
+  const handleBioUpdate = (state: BioState) => {
+    setBioState(state);
+    audio.onBioUpdate(state);
   };
 
   const blobToBase64 = (blob: Blob): Promise<string> => {
@@ -670,19 +117,15 @@ const AppContent: React.FC = () => {
     });
   };
 
-  const triggerSaveProcess = () => {
-    setTriggerSnapshot(true);
-  };
-
   const handleSnapshotCaptured = useCallback(
     async (dataUrl: string) => {
-      setTriggerSnapshot(false);
+      spec.setTriggerSnapshot(false);
 
       // 1. Prepare Music Audio
       let audioString: string | undefined = undefined;
-      if (recordedBlob) {
+      if (audio.recordedBlob) {
         try {
-          audioString = await blobToBase64(recordedBlob);
+          audioString = await blobToBase64(audio.recordedBlob);
         } catch (e) {
           console.error("Audio conversion failed", e);
         }
@@ -690,9 +133,9 @@ const AppContent: React.FC = () => {
 
       // 2. Prepare Reflection Audio
       let reflectionString: string | undefined = undefined;
-      if (reflectionBlob) {
+      if (audio.reflectionBlob) {
         try {
-          reflectionString = await blobToBase64(reflectionBlob);
+          reflectionString = await blobToBase64(audio.reflectionBlob);
         } catch (e) {
           console.error("Reflection conversion failed", e);
         }
@@ -709,179 +152,156 @@ const AppContent: React.FC = () => {
         imageData: dataUrl,
         audioData: audioString,
         reflectionAudioData: reflectionString,
-        reflectionQuestion: reflectionBlob ? reflectionQuestion : undefined, // Save question only if audio exists
+        reflectionQuestion: audio.reflectionBlob ? audio.reflectionQuestion : undefined,
       };
 
       try {
-        StorageService.saveSpecimen(newSpecimen, walletAddress);
-        const updatedCollection =
-          StorageService.getWalletCollection(walletAddress);
-        setCollection(updatedCollection);
-        setLastSavedId(newSpecimen.id);
-        setTimeout(() => setLastSavedId(null), 3000);
+        spec.saveAndReload(newSpecimen);
       } catch (e: any) {
         alert(e.message || "Failed to save specimen");
         return;
       }
 
       setLabState("EMPTY");
-      resetAllAudio();
+      audio.resetAllAudio();
     },
     [
       dna,
       prompt,
       isManualMode,
-      recordedBlob,
-      reflectionBlob,
-      reflectionQuestion,
-      walletAddress
+      audio.recordedBlob,
+      audio.reflectionBlob,
+      audio.reflectionQuestion,
+      audio.resetAllAudio,
+      spec.saveAndReload,
+      spec.setTriggerSnapshot,
     ],
   );
 
+  const handleGenerateDNA = async () => {
+    if (!prompt.trim() && !uploadedImage) return;
+    setIsGenerating(true);
+    try {
+      let newDna: PlantDNA;
+      if (uploadedImage) {
+        newDna = await aiService.generatePlantDNAFromImage(
+          uploadedImage,
+          prompt.trim() || undefined,
+        );
+      } else {
+        newDna = await aiService.generatePlantDNA(prompt);
+      }
+      setDna(newDna);
+      setIsManualMode(false);
+      setLabState("SYNTHESIZED");
+      clearImage();
+    } catch (e) {
+      console.error(e);
+      alert("Failed to analyze. Using cached seed.");
+      setLabState("SYNTHESIZED");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const confirmGrowth = () => {
+    setLabState("GROWING");
+    audio.playIfSinging(dna);
+  };
+
+  const discardSeed = () => {
+    setLabState("EMPTY");
+    setPrompt("");
+  };
+
+  const handleDnaChange = (field: keyof PlantDNA, value: any) => {
+    const newDna = { ...dna, [field]: value };
+    setDna(newDna);
+    audio.playIfSinging(newDna);
+  };
+
+  const handleColorChange = (index: number, newColor: string) => {
+    const updatedPalette = [...dna.colorPalette];
+    updatedPalette[index] = newColor;
+    handleDnaChange("colorPalette", updatedPalette);
+  };
+
   const handleCompost = () => {
     setLabState("EMPTY");
-    resetAllAudio();
+    audio.resetAllAudio();
     setDna(DEFAULT_DNA);
     setPrompt("");
   };
 
-  const handleBioUpdate = (state: BioState) => {
-    setBioState(state);
-    if (isSinging) {
-      plantMusicRef.current.updateBioState(state);
-    }
-  };
-
-  const handleStartMinting = (specimen: Specimen) => {
-    if (!walletAddress) {
-      connectWallet();
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image size must be less than 5MB");
       return;
     }
-    setMintTargetSpecimen(specimen);
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload a valid image file");
+      return;
+    }
+    setUploadedImage(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const clearImage = () => {
+    setUploadedImage(null);
+    setImagePreview(null);
+    if (imageInputRef.current) {
+      imageInputRef.current.value = "";
+    }
+  };
+
+  const triggerSaveProcess = () => {
+    spec.setTriggerSnapshot(true);
+  };
+
+  // Wrap handleStartMinting to also clear the detail modal
+  const handleStartMinting = useCallback((specimen: Specimen) => {
     setSelectedSpecimen(null);
-    setShowMintModal(true);
-  };
-
-  const confirmMint = async (selection: AssetSelection, listingOptions?: ListingOptions) => {
-    if (!mintTargetSpecimen || !walletAddress) return;
-    setIsMinting(true);
-    try {
-      if (!selection.dna) {
-        console.warn(
-          "DNA exclusion not yet supported; proceeding with DNA included.",
-        );
-      }
-      // 1. "Upload" Image, audio, voice and Metadata
-      const uploadResult = await uploadSpecimenToIPFS(mintTargetSpecimen, {
-        includeDNA: selection.dna,
-        includeAudio: selection.audio,
-        includeVoice: selection.voice,
-      });
-
-      // 2. Mint
-      const result = await web3ServiceRef.current.mintNFT(
-        uploadResult.metadata.uri,
-      );
-
-      const updatedSpecimen: Specimen = {
-        ...mintTargetSpecimen,
-        txHash: result.txHash,
-        tokenId: result.tokenId,
-        owner: walletAddress,
-        isListed: listingOptions?.listOnMarket || false,
-        pricePerShare: listingOptions?.pricePerShare,
-        totalShares: listingOptions?.totalShares,
-        soldShares: 0,
-      };
-      StorageService.updateSpecimen(updatedSpecimen);
-      const updatedCollection =
-        StorageService.getWalletCollection(walletAddress);
-      setCollection(updatedCollection);
-      setMintTargetSpecimen(updatedSpecimen);
-
-      // 3. If listing on market, add to marketplace
-      if (listingOptions?.listOnMarket) {
-        marketService.listSpecimen(
-          updatedSpecimen,
-          listingOptions.pricePerShare,
-          listingOptions.totalShares,
-          walletAddress,
-          web3ServiceRef.current.shortenAddress(walletAddress)
-        );
-      }
-    } catch (e) {
-      console.error(e);
-      alert("Minting failed.");
-    } finally {
-      setIsMinting(false);
-    }
-  };
-
-  const handlePurchase = async (listingId: string, shares: number, chain: string) => {
-    if (!walletAddress) return;
-    setIsPurchasing(true);
-    try {
-      await marketService.purchaseShares(listingId, shares, walletAddress, chain);
-      setSelectedListing(marketService.getListing(listingId) || null);
-      setMarketRefreshKey(prev => prev + 1);
-    } catch (e: any) {
-      console.error(e);
-      alert(e.message || "Purchase failed");
-    } finally {
-      setIsPurchasing(false);
-    }
-  };
-
-  const handleSelectListing = (listing: MarketListing) => {
-    setSelectedListing(listing);
-    setShowPurchaseModal(true);
-  };
-
-  const deleteSpecimen = (id: string) => {
-    StorageService.deleteSpecimen(id, walletAddress);
-    const updatedCollection = StorageService.getWalletCollection(walletAddress);
-    setCollection(updatedCollection);
-  };
-
-  const clearCollection = () => {
-    if (confirm(t("burn_confirm"))) {
-      StorageService.clearWalletCollection(walletAddress);
-      setCollection([]);
-    }
-  };
+    spec.handleStartMinting(specimen);
+  }, [spec.handleStartMinting]);
 
   return (
     <div className="min-h-screen w-full flex flex-col md:flex-row bg-grain">
       {/* MODALS */}
       <MintModal
-        isOpen={showMintModal}
-        onClose={() => setShowMintModal(false)}
-        specimen={mintTargetSpecimen}
-        onConfirmMint={confirmMint}
-        walletAddress={walletAddress || ""}
-        isMinting={isMinting}
+        isOpen={spec.showMintModal}
+        onClose={() => spec.setShowMintModal(false)}
+        specimen={spec.mintTargetSpecimen}
+        onConfirmMint={spec.confirmMint}
+        walletAddress={wallet.walletAddress || ""}
+        isMinting={spec.isMinting}
       />
 
       <SpecimenDetailModal
         specimen={selectedSpecimen}
         onClose={() => setSelectedSpecimen(null)}
         onMint={handleStartMinting}
-        onDelete={deleteSpecimen}
-        walletConnected={!!walletAddress}
+        onDelete={spec.deleteSpecimen}
+        walletConnected={!!wallet.walletAddress}
       />
 
       <PurchaseModal
-        isOpen={showPurchaseModal}
-        onClose={() => { setShowPurchaseModal(false); setSelectedListing(null); }}
-        listing={selectedListing}
-        walletAddress={walletAddress}
-        onConnectWallet={connectWallet}
-        onPurchase={handlePurchase}
+        isOpen={market.showPurchaseModal}
+        onClose={() => { market.setShowPurchaseModal(false); market.setSelectedListing(null); }}
+        listing={market.selectedListing}
+        walletAddress={wallet.walletAddress}
+        onConnectWallet={wallet.connectWallet}
+        onPurchase={market.handlePurchase}
       />
 
-      <GuideModal 
-        isOpen={showGuide} 
-        onClose={() => setShowGuide(false)} 
+      <GuideModal
+        isOpen={showGuide}
+        onClose={() => setShowGuide(false)}
       />
 
       {/* LEFT PANEL: Swappable Interface */}
@@ -900,11 +320,11 @@ const AppContent: React.FC = () => {
             <p className="text-xs font-mono text-riso-black/70 uppercase">
               LAB_OS v4.2
               <br />
-              {t("lab_status")}: {isSinging ? t("status_broadcasting") : t(`status_${labState.toLowerCase()}` as any)}
+              {t("lab_status")}: {audio.isSinging ? t("status_broadcasting") : t(`status_${labState.toLowerCase()}` as any)}
             </p>
-            <div className={`w-3 h-3 rounded-full animate-pulse ${isSinging ? "bg-riso-pink" : labState === "GROWING" ? "bg-riso-green" : "bg-gray-300"}`}></div>
+            <div className={`w-3 h-3 rounded-full animate-pulse ${audio.isSinging ? "bg-riso-pink" : labState === "GROWING" ? "bg-riso-green" : "bg-gray-300"}`}></div>
           </div>
-          
+
           {/* Quick Help & Language Switch */}
           <div className="mt-4 flex flex-col gap-2">
             <button onClick={() => setShowGuide(true)} className="flex items-center gap-1 text-[10px] font-mono text-riso-blue hover:underline group">
@@ -922,23 +342,23 @@ const AppContent: React.FC = () => {
 
         {/* Connect/Disconnect Wallet */}
         <button
-          onClick={handleWalletButtonClick}
+          onClick={wallet.handleWalletButtonClick}
           className={`w-full py-2 px-3 border-2 border-black font-bold text-xs flex items-center justify-between group transition-all
-            ${walletAddress ? "bg-riso-black text-white" : "bg-white text-black hover:bg-riso-blue hover:text-white"}`}
-          title={walletAddress ? t("reconnect_wallet_msg", { address: walletAddress }) : t("connect_wallet")}
+            ${wallet.walletAddress ? "bg-riso-black text-white" : "bg-white text-black hover:bg-riso-blue hover:text-white"}`}
+          title={wallet.walletAddress ? t("reconnect_wallet_msg", { address: wallet.walletAddress }) : t("connect_wallet")}
         >
           <div className="flex items-center gap-2">
             <Wallet className="w-4 h-4" />
-            {walletAddress ? t("wallet_linked") : t("connect_wallet")}
+            {wallet.walletAddress ? t("wallet_linked") : t("connect_wallet")}
           </div>
-          {walletAddress && (
+          {wallet.walletAddress && (
             <span className="font-mono text-[10px] opacity-70">
-              {web3ServiceRef.current.shortenAddress(walletAddress)}
+              {wallet.web3Service.shortenAddress(wallet.walletAddress)}
             </span>
           )}
         </button>
 
-        {isSinging ? (
+        {audio.isSinging ? (
           /* VINYL / MUSIC MODE */
           <div className="flex-1 flex flex-col animate-in slide-in-from-right duration-300 space-y-6">
             <div className="w-full aspect-square bg-white border-2 border-black rounded-full shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] relative flex items-center justify-center animate-[spin_4s_linear_infinite]">
@@ -970,17 +390,17 @@ const AppContent: React.FC = () => {
 
             <div className="mt-auto space-y-2">
               <button
-                onClick={toggleRecording}
+                onClick={audio.toggleRecording}
                 className={`w-full py-4 font-bold border-2 border-black flex items-center justify-center gap-2 transition-all uppercase
-                        ${isRecording ? "bg-red-500 text-white animate-pulse" : "bg-white text-black hover:bg-gray-100"}`}
+                        ${audio.isRecording ? "bg-red-500 text-white animate-pulse" : "bg-white text-black hover:bg-gray-100"}`}
               >
-                {isRecording ? (
+                {audio.isRecording ? (
                   <><StopCircle className="w-5 h-5" /> {t("record_stop")}</>
                 ) : (
                   <><Disc className="w-5 h-5" /> {t("record_start")}</>
                 )}
               </button>
-              {recordedBlob && (
+              {audio.recordedBlob && (
                 <div className="flex items-center gap-2 p-2 bg-riso-green/20 border-2 border-riso-green text-xs font-bold text-riso-green animate-in fade-in uppercase">
                   <Check className="w-4 h-4" /> {t("record_buffered")}
                 </div>
@@ -1119,52 +539,52 @@ const AppContent: React.FC = () => {
             </div>
 
             <div className={`space-y-4 border-2 border-dashed border-riso-black p-4 bg-white transform -rotate-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${labState === "GROWING" ? "opacity-100" : "opacity-50 pointer-events-none"}`}>
-              <input type="file" accept="audio/*" onChange={handleFileSelect} ref={fileInputRef} className="hidden" />
+              <input type="file" accept="audio/*" onChange={audio.handleFileSelect} ref={audio.fileInputRef} className="hidden" />
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <Volume2 className="w-5 h-5 text-riso-blue" />
                   <h2 className="font-bold text-lg underline decoration-wavy decoration-riso-pink uppercase">{t("nutrients_title")}</h2>
                 </div>
                 <div className="flex gap-1 text-[10px] font-bold uppercase">
-                  <button onClick={() => handleDemoToggle()} className={`px-1 py-1 border border-black ${inputMode === "demo" ? "bg-riso-pink text-white" : "hover:bg-gray-100"}`}>{t("source_demo")}</button>
-                  <button onClick={() => handleAudioInputToggle("mic")} className={`px-1 py-1 border border-black ${inputMode === "mic" ? "bg-riso-black text-white" : "hover:bg-gray-100"}`}>{t("source_mic")}</button>
-                  <button onClick={() => handleAudioInputToggle("file")} className={`px-1 py-1 border border-black ${inputMode === "file" ? "bg-riso-black text-white" : "hover:bg-gray-100"}`}>{t("source_file")}</button>
-                  <button onClick={() => handleAudioInputToggle("reflection")} className={`px-1 py-1 border border-black ${inputMode === "reflection" ? "bg-riso-black text-white" : "hover:bg-gray-100"}`}>{t("source_voice")}</button>
+                  <button onClick={() => audio.handleDemoToggle()} className={`px-1 py-1 border border-black ${audio.inputMode === "demo" ? "bg-riso-pink text-white" : "hover:bg-gray-100"}`}>{t("source_demo")}</button>
+                  <button onClick={() => audio.handleAudioInputToggle("mic")} className={`px-1 py-1 border border-black ${audio.inputMode === "mic" ? "bg-riso-black text-white" : "hover:bg-gray-100"}`}>{t("source_mic")}</button>
+                  <button onClick={() => audio.handleAudioInputToggle("file")} className={`px-1 py-1 border border-black ${audio.inputMode === "file" ? "bg-riso-black text-white" : "hover:bg-gray-100"}`}>{t("source_file")}</button>
+                  <button onClick={() => audio.handleAudioInputToggle("reflection")} className={`px-1 py-1 border border-black ${audio.inputMode === "reflection" ? "bg-riso-black text-white" : "hover:bg-gray-100"}`}>{t("source_voice")}</button>
                 </div>
               </div>
 
-              {inputMode === "demo" ? (
+              {audio.inputMode === "demo" ? (
                 <div className="space-y-3">
                   <div className="text-[10px] font-mono mb-2 text-gray-500 uppercase">{t("demo_desc")}</div>
                   <div className="grid grid-cols-2 gap-2">
                     {(Object.keys(DEMO_PRESETS) as DemoPreset[]).map((preset) => (
-                      <button key={preset} onClick={() => handleDemoToggle(preset)} className={`p-2 border-2 border-black text-left transition-all ${currentDemoPreset === preset && isDemoPlaying ? "bg-riso-pink text-white shadow-none translate-y-1" : "bg-white hover:bg-gray-100 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"}`}>
+                      <button key={preset} onClick={() => audio.handleDemoToggle(preset)} className={`p-2 border-2 border-black text-left transition-all ${audio.currentDemoPreset === preset && audio.isDemoPlaying ? "bg-riso-pink text-white shadow-none translate-y-1" : "bg-white hover:bg-gray-100 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"}`}>
                         <div className="flex items-center gap-2"><span className="text-lg">{DEMO_PRESETS[preset].icon}</span><div><div className="font-bold text-xs uppercase">{DEMO_PRESETS[preset].name}</div></div></div>
                       </button>
                     ))}
                   </div>
-                  {isDemoPlaying && (<div className="flex items-center justify-center gap-2 py-2 bg-riso-yellow/30 border border-black"><Activity className="w-4 h-4 animate-pulse text-riso-pink" /><span className="text-xs font-bold uppercase">{t("demo_playing", { name: DEMO_PRESETS[currentDemoPreset].name })}</span></div>)}
-                  <button onClick={() => handleDemoToggle()} className={`w-full py-2 font-bold border-2 border-black transition-all uppercase ${isDemoPlaying ? "bg-riso-black text-white" : "bg-riso-yellow hover:bg-yellow-300"}`}>{isDemoPlaying ? t("stop_demo") : t("start_demo")}</button>
+                  {audio.isDemoPlaying && (<div className="flex items-center justify-center gap-2 py-2 bg-riso-yellow/30 border border-black"><Activity className="w-4 h-4 animate-pulse text-riso-pink" /><span className="text-xs font-bold uppercase">{t("demo_playing", { name: DEMO_PRESETS[audio.currentDemoPreset].name })}</span></div>)}
+                  <button onClick={() => audio.handleDemoToggle()} className={`w-full py-2 font-bold border-2 border-black transition-all uppercase ${audio.isDemoPlaying ? "bg-riso-black text-white" : "bg-riso-yellow hover:bg-yellow-300"}`}>{audio.isDemoPlaying ? t("stop_demo") : t("start_demo")}</button>
                 </div>
-              ) : inputMode === "reflection" ? (
+              ) : audio.inputMode === "reflection" ? (
                 <div className="space-y-3">
                   <div className="bg-riso-yellow/30 p-3 border-2 border-riso-black relative">
                     <MessageCircle className="absolute -top-2 -right-2 bg-white border border-black p-1 w-6 h-6" />
                     <div className="text-[10px] font-bold text-gray-500 mb-1 uppercase">{t("reflection_query")}</div>
-                    <p className="font-mono text-sm font-bold leading-tight">{reflectionQuestion}</p>
-                    <button onClick={cycleQuestion} className="absolute bottom-1 right-1 p-1 hover:bg-black/10 rounded-full"><RefreshCcw className="w-3 h-3" /></button>
+                    <p className="font-mono text-sm font-bold leading-tight">{audio.reflectionQuestion}</p>
+                    <button onClick={audio.cycleQuestion} className="absolute bottom-1 right-1 p-1 hover:bg-black/10 rounded-full"><RefreshCcw className="w-3 h-3" /></button>
                   </div>
-                  <button onClick={toggleReflectionRecording} className={`w-full py-3 px-4 font-bold border-2 border-riso-black transition-all flex items-center justify-center gap-2 uppercase ${isRecordingReflection ? "bg-red-500 text-white animate-pulse" : "bg-white hover:bg-gray-100"}`}>
-                    {isRecordingReflection ? <><StopCircle /> {t("stop_recording")}</> : <><Mic2 /> {t("hold_to_answer")}</>}
+                  <button onClick={audio.toggleReflectionRecording} className={`w-full py-3 px-4 font-bold border-2 border-riso-black transition-all flex items-center justify-center gap-2 uppercase ${audio.isRecordingReflection ? "bg-red-500 text-white animate-pulse" : "bg-white hover:bg-gray-100"}`}>
+                    {audio.isRecordingReflection ? <><StopCircle /> {t("stop_recording")}</> : <><Mic2 /> {t("hold_to_answer")}</>}
                   </button>
                   <div className="text-[9px] text-gray-500 text-center leading-tight uppercase">{t("voice_hint")}</div>
                 </div>
               ) : (
-                <button onClick={() => handleAudioInputToggle("mic")} className={`w-full py-3 px-4 font-bold border-2 border-riso-black transition-all duration-150 flex items-center justify-center gap-2 uppercase ${inputMode === "mic" && isListening ? "bg-riso-pink text-white shadow-none translate-y-1" : "bg-riso-yellow hover:bg-yellow-300"}`}>
-                  {inputMode === "mic" && isListening ? <><Disc className="animate-spin" /> {t("halt_stream")}</> : <><Mic /> {t("open_mic")}</>}
+                <button onClick={() => audio.handleAudioInputToggle("mic")} className={`w-full py-3 px-4 font-bold border-2 border-riso-black transition-all duration-150 flex items-center justify-center gap-2 uppercase ${audio.inputMode === "mic" && audio.isListening ? "bg-riso-pink text-white shadow-none translate-y-1" : "bg-riso-yellow hover:bg-yellow-300"}`}>
+                  {audio.inputMode === "mic" && audio.isListening ? <><Disc className="animate-spin" /> {t("halt_stream")}</> : <><Mic /> {t("open_mic")}</>}
                 </button>
               )}
-              <div className="w-full h-12 bg-black border border-black mt-2"><canvas ref={visualizerCanvasRef} className="w-full h-full block" width={300} height={50} /></div>
+              <div className="w-full h-12 bg-black border border-black mt-2"><canvas ref={audio.visualizerCanvasRef} className="w-full h-full block" width={300} height={50} /></div>
             </div>
           </>
         )}
@@ -1173,36 +593,36 @@ const AppContent: React.FC = () => {
       {/* MIDDLE/RIGHT: Canvas Area */}
       <div className="flex-1 relative bg-riso-paper flex flex-col h-screen">
         <div className="absolute top-4 right-4 z-50 flex gap-2">
-          <button onClick={handleSonify} disabled={labState !== "GROWING"} className={`p-3 border-2 border-riso-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all ${labState !== "GROWING" ? "opacity-50 cursor-not-allowed bg-gray-200" : isSinging ? "bg-riso-pink text-white animate-pulse" : "bg-white hover:bg-gray-50"}`} title={t("toggle_voice")}>
-            {isSinging ? <Activity className="w-6 h-6 animate-bounce" /> : <Music className="w-6 h-6" />}
+          <button onClick={audio.handleSonify} disabled={labState !== "GROWING"} className={`p-3 border-2 border-riso-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all ${labState !== "GROWING" ? "opacity-50 cursor-not-allowed bg-gray-200" : audio.isSinging ? "bg-riso-pink text-white animate-pulse" : "bg-white hover:bg-gray-50"}`} title={t("toggle_voice")}>
+            {audio.isSinging ? <Activity className="w-6 h-6 animate-bounce" /> : <Music className="w-6 h-6" />}
           </button>
           <div className="relative">
             <button onClick={triggerSaveProcess} disabled={labState !== "GROWING"} className={`p-3 border-2 border-riso-black shadow-[4px_4px_0px_0px_#00a651] transition-all ${labState !== "GROWING" ? "opacity-50 cursor-not-allowed bg-gray-200" : "bg-white"}`} title={t("archive_specimen")}>
               <Save className={`w-6 h-6 ${labState === "GROWING" ? "text-riso-black" : "text-gray-400"}`} />
             </button>
-            {lastSavedId && <div className="absolute top-full mt-2 right-0 bg-riso-green text-white text-xs font-bold px-2 py-1 border border-black animate-bounce z-50">{t("saved_alert")}</div>}
+            {spec.lastSavedId && <div className="absolute top-full mt-2 right-0 bg-riso-green text-white text-xs font-bold px-2 py-1 border border-black animate-bounce z-50">{t("saved_alert")}</div>}
           </div>
-          <button onClick={() => { setShowGallery(!showGallery); setShowMarketplace(false); }} className={`p-3 border-2 border-riso-black shadow-[4px_4px_0px_0px_#0078bf] transition-all ${showGallery ? "bg-riso-blue text-white" : "bg-white"}`} title={t("my_collection")}>
+          <button onClick={() => { spec.setShowGallery(!spec.showGallery); market.setShowMarketplace(false); }} className={`p-3 border-2 border-riso-black shadow-[4px_4px_0px_0px_#0078bf] transition-all ${spec.showGallery ? "bg-riso-blue text-white" : "bg-white"}`} title={t("my_collection")}>
             <Hash className="w-6 h-6" />
           </button>
-          <button onClick={() => { setShowMarketplace(!showMarketplace); setShowGallery(false); }} className={`p-3 border-2 border-riso-black shadow-[4px_4px_0px_0px_#00a651] transition-all ${showMarketplace ? "bg-riso-green text-white" : "bg-white"}`} title={t("marketplace")}>
+          <button onClick={() => { market.setShowMarketplace(!market.showMarketplace); spec.setShowGallery(false); }} className={`p-3 border-2 border-riso-black shadow-[4px_4px_0px_0px_#00a651] transition-all ${market.showMarketplace ? "bg-riso-green text-white" : "bg-white"}`} title={t("marketplace")}>
             <Store className="w-6 h-6" />
           </button>
         </div>
 
-        {showMarketplace ? (
-          <Marketplace onSelectListing={handleSelectListing} walletAddress={walletAddress} refreshKey={marketRefreshKey} />
-        ) : showGallery ? (
+        {market.showMarketplace ? (
+          <Marketplace onSelectListing={market.handleSelectListing} walletAddress={wallet.walletAddress} refreshKey={market.marketRefreshKey} />
+        ) : spec.showGallery ? (
           <div className="w-full h-full px-8 pb-8 pt-24 overflow-y-auto bg-grain custom-scrollbar">
             <div className="flex flex-wrap justify-between items-end gap-4 mb-8 border-b-2 border-riso-green pb-2">
               <div><h2 className="text-3xl font-bold text-riso-black uppercase">{t("herbarium_title")}</h2><p className="text-xs font-mono text-gray-500 uppercase">{t("gallery_hint")}</p></div>
-              {collection.length > 0 && <button onClick={clearCollection} className="text-red-500 text-xs font-bold hover:underline bg-white px-2 py-1 border border-transparent hover:border-red-500 transition-colors uppercase"><Trash2 className="w-4 h-4 inline" /> {t("burn_all")}</button>}
+              {spec.collection.length > 0 && <button onClick={spec.clearCollection} className="text-red-500 text-xs font-bold hover:underline bg-white px-2 py-1 border border-transparent hover:border-red-500 transition-colors uppercase"><Trash2 className="w-4 h-4 inline" /> {t("burn_all")}</button>}
             </div>
-            {collection.length === 0 ? (
-              <div className="text-center mt-20 opacity-50 font-mono flex flex-col items-center"><Eye className="w-12 h-12 mb-4" /><p className="uppercase">{t("no_specimens")}</p><p className="text-xs mt-2 uppercase">{t("return_to_lab")}</p><button onClick={() => setShowGallery(false)} className="mt-6 px-6 py-2 bg-riso-black text-white font-bold border-2 border-riso-black hover:bg-riso-blue uppercase transition-all flex items-center gap-2 group"><ArrowRight className="w-4 h-4 group-hover:translate-x-1" /> {t("go_to_lab_btn")}</button></div>
+            {spec.collection.length === 0 ? (
+              <div className="text-center mt-20 opacity-50 font-mono flex flex-col items-center"><Eye className="w-12 h-12 mb-4" /><p className="uppercase">{t("no_specimens")}</p><p className="text-xs mt-2 uppercase">{t("return_to_lab")}</p><button onClick={() => spec.setShowGallery(false)} className="mt-6 px-6 py-2 bg-riso-black text-white font-bold border-2 border-riso-black hover:bg-riso-blue uppercase transition-all flex items-center gap-2 group"><ArrowRight className="w-4 h-4 group-hover:translate-x-1" /> {t("go_to_lab_btn")}</button></div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                {collection.map((specimen) => (
+                {spec.collection.map((specimen) => (
                   <div key={specimen.id} onClick={() => setSelectedSpecimen(specimen)} className="bg-white p-2 border-2 border-riso-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer group hover:translate-y-1 hover:shadow-none">
                     <img src={specimen.imageData} alt={specimen.dna.speciesName} className="w-full h-48 object-cover mix-blend-multiply" />
                     <div className="p-3 font-mono text-xs border-t-2 border-dashed border-gray-300 mt-2 bg-gray-50">
@@ -1217,8 +637,8 @@ const AppContent: React.FC = () => {
         ) : (
           <div className="w-full h-full relative p-12 flex items-end justify-center">
             <div className="w-full h-full border-4 border-black relative bg-white/50 backdrop-blur-sm shadow-[10px_10px_0px_0px_rgba(0,0,0,0.1)]">
-              <PlantCanvas analyzer={analyzer} dna={dna} labState={labState} onBioUpdate={handleBioUpdate} triggerSnapshot={triggerSnapshot} onSnapshot={handleSnapshotCaptured} />
-              {isListening && labState === "GROWING" && <div className="absolute inset-0 pointer-events-none opacity-10 bg-[linear-gradient(transparent:50%,rgba(0,166,81,0.25):50%)] bg-[length:100%_4px]" />}
+              <PlantCanvas analyzer={audio.analyzer} dna={dna} labState={labState} onBioUpdate={handleBioUpdate} triggerSnapshot={spec.triggerSnapshot} onSnapshot={handleSnapshotCaptured} />
+              {audio.isListening && labState === "GROWING" && <div className="absolute inset-0 pointer-events-none opacity-10 bg-[linear-gradient(transparent:50%,rgba(0,166,81,0.25):50%)] bg-[length:100%_4px]" />}
             </div>
           </div>
         )}
