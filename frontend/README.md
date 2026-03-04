@@ -1,90 +1,115 @@
-# ChainGarden
+# Chain Garden — Frontend
 
-**ChainGarden** is a generative, audio-reactive botanical art generator with **Risograph (Kong-Ban)** aesthetics, integrated with Web3 for NFT minting.
-
-It uses the Gemini API to synthesize "Plant DNA" from text descriptions (vibes), generates procedural graphics and music based on that DNA, and allows users to mint their unique specimens to the Ethereum Sepolia Testnet.
-
-## ✨ Features
-
-### 1. Audio-Reactive Generative Art
-- **Microphone & File Input:** Visualize real-time audio frequencies.
-- **Procedural Growth:** Plants grow based on bass (structure) and treble (foliage) frequencies.
-- **Mathematical Architectures:** Includes Fractal Trees, Fern Fronds, Organic Vines, and Radial Succulents.
-
-### 2. AI-Powered "Vibe" Synthesis
-- Uses **Google Gemini 2.5 Flash** to translate abstract text prompts (e.g., "Sad jazz in rain") into structured JSON "Plant DNA" (Growth speed, color palette, leaf shape, branching factor).
-
-### 3. Generative Music (Sonification)
-- Plants "sing" based on their DNA.
-- **Algorithmic Composition:** Different plant architectures trigger different musical scales (Dorian, Lydian, Pentatonic) and synthesis techniques (FM synthesis, additive synthesis) using the Web Audio API.
-
-### 4. Risograph Aesthetics (Zine Style)
-- **Visual Style:** Custom CSS implementations of "multiply" blend modes, paper grain textures, and specific Riso ink colors (Fluorescent Pink, Green, Yellow).
-- **UI:** Lo-Fi, brutalist "Zine" interface.
-
-### 5. Web3 Integration (Sepolia Testnet)
-- **Wallet Connection:** Connects to MetaMask via Ethers.js.
-- **Minting Flow:** Simulates (or performs) the minting of the generated image and metadata as an ERC-721 NFT.
-- **Local Gallery:** Persists your collected specimens in the browser's local storage.
+React + TypeScript 前端应用，生成式音频响应植物艺术 + Web3 NFT 铸造。
 
 ---
 
-## 🛠 Tech Stack
-
-- **Frontend:** React 19, TypeScript, Tailwind CSS
-- **AI:** Google Gemini API (`@google/genai`)
-- **Blockchain:** Ethers.js v6, Solidity (ERC-721)
-- **Audio:** Web Audio API (Native)
-- **Styling:** CSS Modules for Grain/Blend modes
-
----
-
-## 🚀 Setup & Compilation
-
-### 1. Prerequisites
-- Node.js installed.
-- A Google Cloud Project with **Gemini API Key**.
-- **MetaMask** browser extension installed.
-
-### 2. Installation
+## 快速启动
 
 ```bash
-# Install dependencies
 npm install
-
-# Set up Environment Variable
-# Create a .env file and add:
-API_KEY=your_google_gemini_api_key
-```
-
-### 3. Smart Contract Deployment (Optional for Full Web3)
-
-To make the minting "Real", you need to deploy the Solidity contract.
-
-1. Open [Remix IDE](https://remix.ethereum.org/).
-2. Create a file `ChainGarden.sol` and paste the contract code (provided in the previous chat).
-3. Compile the contract.
-4. In the "Deploy" tab, select **Injected Provider - MetaMask**.
-5. Deploy to **Sepolia Testnet**.
-6. Copy the resulting **Contract Address**.
-7. Update `services/web3Service.ts`:
-   ```typescript
-   const CONTRACT_ADDRESS = "0xYourCopiedAddress...";
-   ```
-8. Uncomment the "REAL MINTING LOGIC" block in `mintNFT` function in `web3Service.ts`.
-
-### 4. Run the Application
-
-```bash
-npm start
-# Runs on http://localhost:1234 (or similar)
+npm run dev
+# 访问 http://localhost:5173
 ```
 
 ---
 
-## 🎨 Aesthetic Guide
+## 环境变量
 
-The design follows the **Risograph** philosophy:
-- **Colors:** Strictly limited palette (#00a651 Green, #ff48b0 Pink, #0078bf Blue, #ffe800 Yellow, #1a1a1a Black).
-- **Overprinting:** Elements use `mix-blend-mode: multiply` to simulate ink layering.
-- **Imperfection:** CSS Noise filters and subtle rotations (`rotate-1`) mimic misalignment and paper texture.
+在 `frontend/` 目录下创建 `.env` 文件：
+
+```env
+# AI 服务（至少配置一个）
+VITE_QWEN_API_KEY=your_qwen_api_key
+VITE_GEMINI_API_KEY=your_gemini_api_key
+VITE_AI_SERVICE_PROVIDER=qwen          # qwen 或 gemini，默认 qwen
+
+# Pinata IPFS（铸造时必填）
+VITE_PINATA_JWT=your_pinata_jwt_token
+```
+
+---
+
+## 目录结构
+
+```
+frontend/
+├── App.tsx                             # 顶层编排，纯 JSX
+├── config/
+│   ├── contracts.ts                    # ABI、合约地址、链 ID（合约升级只改这里）
+│   └── env.ts                          # 所有 env var 集中读取
+├── hooks/
+│   ├── useWallet.ts                    # 钱包连接/断开/静默重连
+│   ├── useAudio.ts                     # 音频录制/分析/可视化/植物音乐
+│   ├── useMarket.ts                    # 市场状态与购买
+│   └── useSpecimenCollection.ts        # 标本集合/铸造流程
+├── components/
+│   ├── PlantCanvas.tsx                 # Canvas 组件（refs/effects/JSX）
+│   ├── plantCanvas/                    # Canvas 渲染子系统
+│   │   ├── types.ts                    # DrawState / PhysicsRefs 接口
+│   │   ├── primitives.ts               # 底层绘图原语
+│   │   ├── physics.ts                  # 音频→物理状态映射
+│   │   └── architectures/             # 植物生长算法（每种一个文件）
+│   │       ├── fractal.ts / vine.ts / succulent.ts
+│   │       ├── fern.ts / willow.ts / dataBlossom.ts
+│   │       └── index.ts               # 根据 DNA 路由到对应算法
+│   ├── MintModal.tsx
+│   ├── Marketplace.tsx
+│   ├── MusicCard.tsx
+│   ├── PurchaseModal.tsx
+│   ├── SpecimenDetailModal.tsx
+│   └── GuideModal.tsx
+├── services/
+│   ├── ai/
+│   │   ├── aiServiceFactory.ts         # 懒加载单例，统一入口
+│   │   ├── parseAndValidateDNA.ts      # DNA 解析与校验（qwen/gemini 共用）
+│   │   ├── geminiService.ts
+│   │   ├── qwenService.ts
+│   │   └── prompts.ts
+│   ├── web3Service.ts                  # 链上交互（mint、网络切换）
+│   ├── ipfsService.ts                  # IPFS 上传（图片/音频并行）
+│   ├── storageService.ts               # LocalStorage 标本存储（单例）
+│   ├── marketService.ts
+│   ├── audioService.ts
+│   ├── demoAudioService.ts
+│   └── plantMusicService.ts
+├── contexts/LanguageContext.tsx
+├── translations.ts
+└── types.ts
+```
+
+---
+
+## 关键设计说明
+
+### 合约配置只有一个地方
+
+`config/contracts.ts` 集中管理合约 ABI、地址、链 ID。**部署新合约后只改这一个文件**，web3Service 和其他服务都从这里导入，不存在其他硬编码位置。
+
+### App.tsx 是纯编排层
+
+App.tsx 不包含业务逻辑，只负责：
+1. 调用 4 个 hooks 获取状态和回调
+2. 处理跨 hook 的交互函数（需要同时访问多个 hook 状态）
+3. 渲染 JSX
+
+### PlantCanvas 渲染子系统
+
+Canvas 渲染拆分为：
+- **DrawState 快照**：每帧构建一次，将所有 ref 值打包成普通对象传给绘图函数，消除隐式闭包依赖
+- **PhysicsRefs 引用传递**：物理状态更新使用引用传递，与只读快照分离
+- **architectures/**：每种植物算法独立文件，均为纯函数，可单独测试
+
+### AI 服务可切换
+
+通过 `VITE_AI_SERVICE_PROVIDER` 环境变量在 Qwen 和 Gemini 之间切换，`aiServiceFactory.ts` 懒加载并缓存单例，两个服务共享 `parseAndValidateDNA.ts` 中的解析校验逻辑。
+
+---
+
+## NPM Scripts
+
+```bash
+npm run dev      # 开发服务器
+npm run build    # 生产构建
+npm run preview  # 预览构建产物
+```
