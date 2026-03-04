@@ -293,20 +293,16 @@ class MarketService {
   getUserHoldings(buyer: string): { listing: MarketListing; shares: number }[] {
     const purchases = this.getUserPurchases(buyer);
     const holdingsMap = new Map<string, number>();
-    
     purchases.forEach(p => {
-      const current = holdingsMap.get(p.listingId) || 0;
-      holdingsMap.set(p.listingId, current + p.shares);
+      holdingsMap.set(p.listingId, (holdingsMap.get(p.listingId) || 0) + p.shares);
     });
-    
+
+    const listingsById = new Map(this.listings.map(l => [l.id, l]));
     const holdings: { listing: MarketListing; shares: number }[] = [];
     holdingsMap.forEach((shares, listingId) => {
-      const listing = this.getListing(listingId);
-      if (listing) {
-        holdings.push({ listing, shares });
-      }
+      const listing = listingsById.get(listingId);
+      if (listing) holdings.push({ listing, shares });
     });
-    
     return holdings;
   }
 

@@ -279,7 +279,7 @@ const AppContent: React.FC = () => {
         specimen={spec.mintTargetSpecimen}
         onConfirmMint={spec.confirmMint}
         walletAddress={wallet.walletAddress || ""}
-        isMinting={spec.isMinting}
+        mintPhase={spec.mintPhase}
       />
 
       <SpecimenDetailModal

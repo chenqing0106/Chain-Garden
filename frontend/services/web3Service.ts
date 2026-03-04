@@ -150,56 +150,41 @@ export class Web3Service {
     }
   }
 
-  async switchNetworkToZetaChain() {
+  // 通用网络切换：switch，若 4902 且提供了 networkConfig 则先 add 再 switch，然后刷新 provider/signer
+  private async switchNetwork(chainId: string, networkConfig?: object): Promise<void> {
     const eth = (window as any).ethereum;
-    if (!eth) {
-      throw new Error("MetaMask not found");
-    }
-    
-    try {
-      await eth.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: ZETACHAIN_TESTNET.chainId }],
-      });
+    if (!eth) throw new Error("MetaMask not found");
 
-      // 重新创建 provider 和 signer 以确保使用新网络
-      this.provider = new BrowserProvider(eth);
-      
-      // 获取当前账户
-      const accounts = await eth.request({ method: 'eth_accounts' });
-      if (accounts.length > 0) {
-        this.signer = await this.provider.getSigner();
-      } else {
-        throw new Error("No accounts found. Please connect your wallet.");
-      }
-      
-      // 验证网络切换成功
-      const network = await this.provider.getNetwork();
-      if (network.chainId !== ZETACHAIN_CHAIN_ID) {
-        throw new Error("Network switch failed. Please switch to ZetaChain Athens Testnet manually.");
-      }
+    try {
+      await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId }] });
     } catch (error: any) {
-      // This error code indicates that the chain has not been added to MetaMask.
-      if (error.code === 4902) {
-        // Try to add ZetaChain network
+      if (error.code === 4902 && networkConfig) {
         try {
-          await eth.request({
-            method: 'wallet_addEthereumChain',
-            params: [ZETACHAIN_TESTNET],
-          });
-          
-          // 等待网络添加完成，并重新创建 provider 和 signer
-          this.provider = new BrowserProvider(eth);
-          const accounts = await eth.request({ method: 'eth_accounts' });
-          if (accounts.length > 0) {
-            this.signer = await this.provider.getSigner();
-          }
-        } catch (addError) {
-          throw new Error("Please add ZetaChain Athens Testnet to MetaMask manually");
+          await eth.request({ method: 'wallet_addEthereumChain', params: [networkConfig] });
+        } catch {
+          throw new Error("Please add the network to MetaMask manually");
         }
       } else {
         throw error;
       }
+    }
+
+    this.provider = new BrowserProvider(eth);
+    const accounts = await eth.request({ method: 'eth_accounts' });
+    if (accounts.length > 0) {
+      this.signer = await this.provider.getSigner();
+    }
+  }
+
+  async switchNetworkToZetaChain() {
+    await this.switchNetwork(ZETACHAIN_TESTNET.chainId, ZETACHAIN_TESTNET);
+
+    if (!this.signer) {
+      throw new Error("No accounts found. Please connect your wallet.");
+    }
+    const network = await this.provider!.getNetwork();
+    if (network.chainId !== ZETACHAIN_CHAIN_ID) {
+      throw new Error("Network switch failed. Please switch to ZetaChain Athens Testnet manually.");
     }
   }
 
@@ -207,11 +192,8 @@ export class Web3Service {
   async switchNetworkToSepolia() {
     if (!this.provider) return;
     try {
-      await (window as any).ethereum.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: '0xaa36a7' }], // Sepolia Chain ID
-      });
-    } catch (error: any) {
+      await this.switchNetwork('0xaa36a7');
+    } catch {
       // Sepolia not added to wallet - ignore
     }
   }

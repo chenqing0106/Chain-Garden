@@ -25,7 +25,7 @@ export function useSpecimenCollection({
   const [lastSavedId, setLastSavedId] = useState<string | null>(null);
   const [showMintModal, setShowMintModal] = useState(false);
   const [mintTargetSpecimen, setMintTargetSpecimen] = useState<Specimen | null>(null);
-  const [isMinting, setIsMinting] = useState(false);
+  const [mintPhase, setMintPhase] = useState<'idle' | 'ipfs' | 'wallet'>('idle');
 
   // Reload collection when wallet changes (after initialization completes)
   useEffect(() => {
@@ -57,7 +57,7 @@ export function useSpecimenCollection({
     listingOptions?: ListingOptions,
   ) => {
     if (!mintTargetSpecimen || !walletAddress) return;
-    setIsMinting(true);
+    setMintPhase('ipfs');
     try {
       if (!selection.dna) {
         console.warn("DNA exclusion not yet supported; proceeding with DNA included.");
@@ -67,6 +67,7 @@ export function useSpecimenCollection({
         includeAudio: selection.audio,
         includeVoice: selection.voice,
       });
+      setMintPhase('wallet');
       const result = await web3Service.mintNFT(uploadResult.metadata.uri);
       const updatedSpecimen: Specimen = {
         ...mintTargetSpecimen,
@@ -95,7 +96,7 @@ export function useSpecimenCollection({
       console.error(e);
       alert("Minting failed.");
     } finally {
-      setIsMinting(false);
+      setMintPhase('idle');
     }
   }, [mintTargetSpecimen, walletAddress, web3Service]);
 
@@ -122,7 +123,7 @@ export function useSpecimenCollection({
     showMintModal,
     setShowMintModal,
     mintTargetSpecimen,
-    isMinting,
+    mintPhase,
     saveAndReload,
     handleStartMinting,
     confirmMint,

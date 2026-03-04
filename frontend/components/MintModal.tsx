@@ -37,7 +37,7 @@ interface MintModalProps {
   specimen: Specimen | null;
   onConfirmMint: (selection: AssetSelection, listingOptions?: ListingOptions) => Promise<void>;
   walletAddress: string;
-  isMinting: boolean;
+  mintPhase: 'idle' | 'ipfs' | 'wallet';
 }
 
 const MintModal: React.FC<MintModalProps> = ({
@@ -46,7 +46,7 @@ const MintModal: React.FC<MintModalProps> = ({
   specimen,
   onConfirmMint,
   walletAddress,
-  isMinting,
+  mintPhase,
 }) => {
   const { t } = useLanguage();
   const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
@@ -85,12 +85,9 @@ const MintModal: React.FC<MintModalProps> = ({
   }, [isOpen, specimen]);
 
   useEffect(() => {
-    if (isMinting) {
-      setStep(1);
-      const t1 = setTimeout(() => setStep(2), 2500); // Wait for "IPFS"
-      return () => clearTimeout(t1);
-    }
-  }, [isMinting]);
+    if (mintPhase === 'ipfs') setStep(1);
+    else if (mintPhase === 'wallet') setStep(2);
+  }, [mintPhase]);
 
   if (!isOpen || !specimen) return null;
 
@@ -489,7 +486,7 @@ const MintModal: React.FC<MintModalProps> = ({
                 {step === 0 && (
                   <button
                     onClick={handleMintClick}
-                    disabled={isMinting}
+                    disabled={mintPhase !== 'idle'}
                     className="w-full py-4 bg-riso-pink text-white font-bold text-lg border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:translate-x-1 hover:shadow-none transition-all flex items-center justify-center gap-3 uppercase"
                     data-oid="5p2wvby"
                   >
