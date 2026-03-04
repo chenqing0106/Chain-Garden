@@ -16,17 +16,20 @@ npm run dev
 
 ## 环境变量
 
-在 `frontend/` 目录下创建 `.env` 文件：
+在**根目录**（`chain-garden/.env`，不是 `frontend/.env`）创建 `.env` 文件：
 
 ```env
-# AI 服务（至少配置一个）
-VITE_QWEN_API_KEY=your_qwen_api_key
-VITE_GEMINI_API_KEY=your_gemini_api_key
-VITE_AI_SERVICE_PROVIDER=qwen          # qwen 或 gemini，默认 qwen
+# AI 服务（至少配置一个，无 VITE_ 前缀）
+QWEN_API_KEY=your_qwen_api_key
+GEMINI_API_KEY=your_gemini_api_key
+AI_SERVICE_PROVIDER=qwen               # qwen 或 gemini，默认 qwen
 
-# Pinata IPFS（铸造时必填）
+# Pinata IPFS（铸造时必填，需要 VITE_ 前缀）
 VITE_PINATA_JWT=your_pinata_jwt_token
 ```
+
+> `vite.config.ts` 使用 `loadEnv(mode, '../', '')` 从根目录加载所有变量，再通过 `define` 注入。
+> AI 变量不需要 `VITE_` 前缀，Pinata 变量需要。
 
 ---
 

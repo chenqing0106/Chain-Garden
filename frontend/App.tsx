@@ -197,7 +197,8 @@ const AppContent: React.FC = () => {
       clearImage();
     } catch (e) {
       console.error(e);
-      alert("Failed to analyze. Using cached seed.");
+      const msg = e instanceof Error ? e.message : String(e);
+      alert(`AI 分析失败：${msg}`);
       setLabState("SYNTHESIZED");
     } finally {
       setIsGenerating(false);

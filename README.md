@@ -113,28 +113,24 @@ npm install
 
 ### 配置环境变量
 
-在 `frontend/` 目录下创建 `.env` 文件：
+在**根目录**创建 `.env` 文件（所有变量统一放在根目录）：
 
 ```env
 # AI 服务（至少配置一个）
-VITE_QWEN_API_KEY=your_qwen_api_key       # 推荐：阿里云通义千问
-VITE_GEMINI_API_KEY=your_gemini_api_key   # 可选：Google Gemini
-VITE_AI_SERVICE_PROVIDER=qwen             # 可选：明确指定，默认 qwen
+QWEN_API_KEY=your_qwen_api_key            # 推荐：阿里云通义千问
+GEMINI_API_KEY=your_gemini_api_key        # 可选：Google Gemini
+AI_SERVICE_PROVIDER=qwen                  # 可选：明确指定，默认 qwen
 
 # Pinata IPFS（铸造时必填）
 VITE_PINATA_JWT=your_pinata_jwt_token
 # VITE_PINATA_GATEWAY=https://gateway.pinata.cloud/ipfs  # 可选，有默认值
-```
 
-在根目录创建 `.env` 文件（仅部署合约时需要）：
-
-```env
-# 部署者私钥（不要提交到 Git！）
+# 部署者私钥（不要提交到 Git！仅合约部署时需要）
 PRIVATE_KEY=your_private_key_here
-
-# ZetaChain Athens Testnet RPC（可选，hardhat.config.js 已有默认值）
-ZETACHAIN_RPC_URL=https://zetachain-athens-evm.blockpi.network/v1/rpc/public
 ```
+
+> **注意**：AI 变量（`QWEN_API_KEY` 等）无 `VITE_` 前缀；Pinata 变量需要 `VITE_` 前缀。
+> `vite.config.ts` 通过 `loadEnv` 从根目录读取所有变量并注入前端构建。
 
 ### 运行前端
 
