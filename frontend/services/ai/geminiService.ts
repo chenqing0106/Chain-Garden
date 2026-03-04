@@ -3,6 +3,7 @@ import { PlantDNA } from "../../types";
 import { AIService } from "./aiService.interface";
 import { buildTextAnalysisPrompt, buildImageAnalysisPrompt } from "./prompts";
 import { GEMINI_API_KEY as apiKey } from '../../config/env';
+import { parseAndValidateDNA } from './parseAndValidateDNA';
 
 const ai = apiKey
   ? new GoogleGenAI({ apiKey })
@@ -65,7 +66,7 @@ class GeminiService implements AIService {
     });
 
       if (response.text) {
-        return JSON.parse(response.text) as PlantDNA;
+        return parseAndValidateDNA(response.text);
       }
 
       throw new Error("Failed to generate plant DNA");
@@ -134,7 +135,7 @@ class GeminiService implements AIService {
       });
 
       if (response.text) {
-        return JSON.parse(response.text) as PlantDNA;
+        return parseAndValidateDNA(response.text);
       }
 
       throw new Error("Failed to generate plant DNA from image");

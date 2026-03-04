@@ -19,7 +19,7 @@ export class StorageService {
   /**
    * Get all specimens for a specific wallet address
    */
-  static getWalletCollection(walletAddress: string | null): Specimen[] {
+  getWalletCollection(walletAddress: string | null): Specimen[] {
     try {
       if (!walletAddress) {
         // Return anonymous collection if no wallet connected
@@ -43,7 +43,7 @@ export class StorageService {
   /**
    * Save a new specimen and associate it with the wallet
    */
-  static saveSpecimen(specimen: Specimen, walletAddress: string | null): void {
+  saveSpecimen(specimen: Specimen, walletAddress: string | null): void {
     try {
       // 1. Add to global collection
       const globalCollection = this.getGlobalCollection();
@@ -74,7 +74,7 @@ export class StorageService {
   /**
    * Update an existing specimen (e.g., after minting)
    */
-  static updateSpecimen(specimen: Specimen): void {
+  updateSpecimen(specimen: Specimen): void {
     try {
       const globalCollection = this.getGlobalCollection();
       const updatedGlobal = globalCollection.map(s => 
@@ -89,7 +89,7 @@ export class StorageService {
   /**
    * Delete a specimen
    */
-  static deleteSpecimen(specimenId: string, walletAddress: string | null): void {
+  deleteSpecimen(specimenId: string, walletAddress: string | null): void {
     try {
       // 1. Remove from global collection
       const globalCollection = this.getGlobalCollection();
@@ -116,7 +116,7 @@ export class StorageService {
   /**
    * Clear all specimens for a wallet
    */
-  static clearWalletCollection(walletAddress: string | null): void {
+  clearWalletCollection(walletAddress: string | null): void {
     try {
       if (!walletAddress) {
         this.clearAnonymousCollection();
@@ -143,7 +143,7 @@ export class StorageService {
   /**
    * Transfer anonymous specimens to a wallet when connecting
    */
-  static transferAnonymousToWallet(walletAddress: string): void {
+  transferAnonymousToWallet(walletAddress: string): void {
     try {
       const anonymousSpecimens = this.getAnonymousCollection();
       if (anonymousSpecimens.length === 0) return;
@@ -170,13 +170,13 @@ export class StorageService {
   /**
    * Get total specimen count across all wallets
    */
-  static getTotalSpecimenCount(): number {
+  getTotalSpecimenCount(): number {
     return this.getGlobalCollection().length;
   }
 
   // --- Private Helper Methods ---
 
-  private static getGlobalCollection(): Specimen[] {
+  private getGlobalCollection(): Specimen[] {
     try {
       const data = localStorage.getItem(GLOBAL_COLLECTION_KEY);
       return data ? JSON.parse(data) : [];
@@ -185,7 +185,7 @@ export class StorageService {
     }
   }
 
-  private static getWalletMapping(): WalletMapping {
+  private getWalletMapping(): WalletMapping {
     try {
       const data = localStorage.getItem(WALLET_MAPPING_KEY);
       return data ? JSON.parse(data) : {};
@@ -194,7 +194,7 @@ export class StorageService {
     }
   }
 
-  private static getAnonymousCollection(): Specimen[] {
+  private getAnonymousCollection(): Specimen[] {
     try {
       const data = localStorage.getItem(ANONYMOUS_COLLECTION_KEY);
       const anonymousIds: string[] = data ? JSON.parse(data) : [];
@@ -206,7 +206,7 @@ export class StorageService {
     }
   }
 
-  private static addToAnonymousCollection(specimenId: string): void {
+  private addToAnonymousCollection(specimenId: string): void {
     try {
       const data = localStorage.getItem(ANONYMOUS_COLLECTION_KEY);
       const anonymousIds: string[] = data ? JSON.parse(data) : [];
@@ -217,7 +217,7 @@ export class StorageService {
     }
   }
 
-  private static removeFromAnonymousCollection(specimenId: string): void {
+  private removeFromAnonymousCollection(specimenId: string): void {
     try {
       const data = localStorage.getItem(ANONYMOUS_COLLECTION_KEY);
       const anonymousIds: string[] = data ? JSON.parse(data) : [];
@@ -228,7 +228,7 @@ export class StorageService {
     }
   }
 
-  private static clearAnonymousCollection(): void {
+  private clearAnonymousCollection(): void {
     try {
       const raw = localStorage.getItem(ANONYMOUS_COLLECTION_KEY);
       const anonymousIds: string[] = raw ? JSON.parse(raw) : [];
@@ -247,7 +247,7 @@ export class StorageService {
   /**
    * Migrate old storage format to new wallet-based format
    */
-  static migrateOldStorage(walletAddress: string | null): void {
+  migrateOldStorage(walletAddress: string | null): void {
     try {
       const oldKey = 'chainGarden_collection';
       const oldData = localStorage.getItem(oldKey);
@@ -284,3 +284,5 @@ export class StorageService {
     }
   }
 }
+
+export const storageService = new StorageService();

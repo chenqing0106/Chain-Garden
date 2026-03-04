@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { StorageService } from "../services/storageService";
+import { storageService } from "../services/storageService";
 import { marketService } from "../services/marketService";
 import { uploadSpecimenToIPFS } from "../services/ipfsService";
 import { Web3Service } from "../services/web3Service";
@@ -30,14 +30,14 @@ export function useSpecimenCollection({
   // Reload collection when wallet changes (after initialization completes)
   useEffect(() => {
     if (!walletInitialized) return;
-    const updated = StorageService.getWalletCollection(walletAddress);
+    const updated = storageService.getWalletCollection(walletAddress);
     setCollection(updated);
   }, [walletAddress, walletInitialized]);
 
   // Save a specimen and reload the collection; throws if save fails
   const saveAndReload = useCallback((specimen: Specimen) => {
-    StorageService.saveSpecimen(specimen, walletAddress);
-    const updated = StorageService.getWalletCollection(walletAddress);
+    storageService.saveSpecimen(specimen, walletAddress);
+    const updated = storageService.getWalletCollection(walletAddress);
     setCollection(updated);
     setLastSavedId(specimen.id);
     setTimeout(() => setLastSavedId(null), 3000);
@@ -78,8 +78,8 @@ export function useSpecimenCollection({
         totalShares: listingOptions?.totalShares,
         soldShares: 0,
       };
-      StorageService.updateSpecimen(updatedSpecimen);
-      const updatedCollection = StorageService.getWalletCollection(walletAddress);
+      storageService.updateSpecimen(updatedSpecimen);
+      const updatedCollection = storageService.getWalletCollection(walletAddress);
       setCollection(updatedCollection);
       setMintTargetSpecimen(updatedSpecimen);
       if (listingOptions?.listOnMarket) {
@@ -100,14 +100,14 @@ export function useSpecimenCollection({
   }, [mintTargetSpecimen, walletAddress, web3Service]);
 
   const deleteSpecimen = useCallback((id: string) => {
-    StorageService.deleteSpecimen(id, walletAddress);
-    const updated = StorageService.getWalletCollection(walletAddress);
+    storageService.deleteSpecimen(id, walletAddress);
+    const updated = storageService.getWalletCollection(walletAddress);
     setCollection(updated);
   }, [walletAddress]);
 
   const clearCollection = useCallback(() => {
     if (confirm(t("burn_confirm"))) {
-      StorageService.clearWalletCollection(walletAddress);
+      storageService.clearWalletCollection(walletAddress);
       setCollection([]);
     }
   }, [walletAddress, t]);

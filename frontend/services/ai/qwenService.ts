@@ -2,6 +2,7 @@ import { PlantDNA } from "../../types";
 import { AIService } from "./aiService.interface";
 import { buildTextAnalysisPrompt, buildImageAnalysisPrompt } from "./prompts";
 import { QWEN_API_KEY as apiKey } from '../../config/env';
+import { parseAndValidateDNA } from './parseAndValidateDNA';
 
 /**
  * Qwen AI 服务实现
@@ -63,37 +64,7 @@ class QwenService implements AIService {
         throw new Error("Failed to generate plant DNA: No content in response");
       }
 
-      // 解析 JSON（可能需要清理 markdown 代码块）
-      let jsonContent = content.trim();
-      
-      // 移除可能的 markdown 代码块包装
-      if (jsonContent.startsWith('```json')) {
-        jsonContent = jsonContent.replace(/^```json\n?/, '').replace(/\n?```$/, '');
-      } else if (jsonContent.startsWith('```')) {
-        jsonContent = jsonContent.replace(/^```\n?/, '').replace(/\n?```$/, '');
-      }
-
-      const plantDNA = JSON.parse(jsonContent) as PlantDNA;
-      
-      // 验证必需字段
-      const requiredFields: (keyof PlantDNA)[] = [
-        'speciesName', 'description', 'growthArchitecture', 'branchingFactor', 
-        'angleVariance', 'colorPalette', 'leafShape', 'leafArrangement', 
-        'growthSpeed', 'mood', 'energy'
-      ];
-      
-      for (const field of requiredFields) {
-        if (!(field in plantDNA)) {
-          throw new Error(`Missing required field: ${field}`);
-        }
-      }
-
-      // 验证 colorPalette 长度
-      if (!Array.isArray(plantDNA.colorPalette) || plantDNA.colorPalette.length !== 3) {
-        throw new Error("colorPalette must be an array of exactly 3 hex color codes");
-      }
-
-      return plantDNA;
+      return parseAndValidateDNA(content);
     } catch (error: any) {
       if (error?.message?.includes("API key") || error?.message?.includes("Invalid")) {
         throw new Error("Invalid API key. Please check your QWEN_API_KEY in .env file. See ENV_SETUP.md for setup instructions.");
@@ -160,33 +131,7 @@ class QwenService implements AIService {
         throw new Error("Failed to generate plant DNA from image: No content in response");
       }
 
-      let jsonContent = content.trim();
-      
-      if (jsonContent.startsWith('```json')) {
-        jsonContent = jsonContent.replace(/^```json\n?/, '').replace(/\n?```$/, '');
-      } else if (jsonContent.startsWith('```')) {
-        jsonContent = jsonContent.replace(/^```\n?/, '').replace(/\n?```$/, '');
-      }
-
-      const plantDNA = JSON.parse(jsonContent) as PlantDNA;
-      
-      const requiredFields: (keyof PlantDNA)[] = [
-        'speciesName', 'description', 'growthArchitecture', 'branchingFactor', 
-        'angleVariance', 'colorPalette', 'leafShape', 'leafArrangement', 
-        'growthSpeed', 'mood', 'energy'
-      ];
-      
-      for (const field of requiredFields) {
-        if (!(field in plantDNA)) {
-          throw new Error(`Missing required field: ${field}`);
-        }
-      }
-
-      if (!Array.isArray(plantDNA.colorPalette) || plantDNA.colorPalette.length !== 3) {
-        throw new Error("colorPalette must be an array of exactly 3 hex color codes");
-      }
-
-      return plantDNA;
+      return parseAndValidateDNA(content);
     } catch (error: any) {
       if (error?.message?.includes("API key") || error?.message?.includes("Invalid")) {
         throw new Error("Invalid API key. Please check your QWEN_API_KEY in .env file. See ENV_SETUP.md for setup instructions.");

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Web3Service } from "../services/web3Service";
-import { StorageService } from "../services/storageService";
+import { storageService } from "../services/storageService";
 import { useLanguage } from "../contexts/LanguageContext";
 
 export function useWallet() {
@@ -15,13 +15,13 @@ export function useWallet() {
       try {
         const addr = await web3ServiceRef.current.connectWallet(true);
         if (addr) {
-          StorageService.migrateOldStorage(addr);
+          storageService.migrateOldStorage(addr);
           setWalletAddress(addr);
         } else {
-          StorageService.migrateOldStorage(null);
+          storageService.migrateOldStorage(null);
         }
       } catch (e) {
-        StorageService.migrateOldStorage(null);
+        storageService.migrateOldStorage(null);
       } finally {
         setWalletInitialized(true);
       }
@@ -38,7 +38,7 @@ export function useWallet() {
       }
       setWalletAddress(addr);
       await web3ServiceRef.current.switchNetworkToZetaChain();
-      StorageService.transferAnonymousToWallet(addr);
+      storageService.transferAnonymousToWallet(addr);
     } catch (e: any) {
       console.error("Wallet connection error:", e);
       if (e.code === 4001) {
@@ -80,7 +80,7 @@ export function useWallet() {
       }
       setWalletAddress(addr);
       await web3ServiceRef.current.switchNetworkToZetaChain();
-      StorageService.transferAnonymousToWallet(addr);
+      storageService.transferAnonymousToWallet(addr);
     } catch (e: any) {
       console.error("Reconnection error:", e);
       if (e.code === 4001) {
