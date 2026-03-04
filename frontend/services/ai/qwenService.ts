@@ -1,8 +1,7 @@
 import { PlantDNA } from "../../types";
 import { AIService } from "./aiService.interface";
 import { buildTextAnalysisPrompt, buildImageAnalysisPrompt } from "./prompts";
-
-const apiKey = process.env.QWEN_API_KEY || process.env.API_KEY;
+import { QWEN_API_KEY as apiKey } from '../../config/env';
 
 /**
  * Qwen AI 服务实现

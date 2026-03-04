@@ -1,6 +1,7 @@
 import { AIService } from "./aiService.interface";
 import { geminiService } from "./geminiService";
 import { qwenService } from "./qwenService";
+import { AI_SERVICE_PROVIDER, GEMINI_API_KEY, QWEN_API_KEY } from '../../config/env';
 
 /**
  * AI 服务提供商类型
@@ -18,9 +19,9 @@ export type AIServiceProvider = "gemini" | "qwen";
  * 4. 默认使用 qwen
  */
 export function getAIService(): AIService {
-  const provider = (process.env.AI_SERVICE_PROVIDER || "").toLowerCase() as AIServiceProvider;
-  const hasQwenKey = !!process.env.QWEN_API_KEY;
-  const hasGeminiKey = !!process.env.GEMINI_API_KEY;
+  const provider = AI_SERVICE_PROVIDER.toLowerCase() as AIServiceProvider;
+  const hasQwenKey = !!QWEN_API_KEY;
+  const hasGeminiKey = !!GEMINI_API_KEY;
 
   // 如果明确指定了提供商，直接返回
   if (provider === "gemini") {

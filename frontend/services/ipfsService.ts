@@ -1,9 +1,5 @@
 import { Specimen, PlantDNA } from '../types';
-
-// Pinata API 配置
-const PINATA_API_BASE = import.meta.env.VITE_PINATA_API_BASE || 'https://api.pinata.cloud';
-const PINATA_JWT = import.meta.env.VITE_PINATA_JWT;
-const PINATA_GATEWAY_BASE = import.meta.env.VITE_PINATA_GATEWAY || 'https://gateway.pinata.cloud/ipfs';
+import { PINATA_JWT, PINATA_API_BASE, PINATA_GATEWAY_BASE } from '../config/env';
 
 // 调试：检查环境变量是否被正确加载（开发环境）
 if (import.meta.env.DEV) {

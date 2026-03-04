@@ -2,18 +2,13 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { PlantDNA } from "../../types";
 import { AIService } from "./aiService.interface";
 import { buildTextAnalysisPrompt, buildImageAnalysisPrompt } from "./prompts";
+import { GEMINI_API_KEY as apiKey } from '../../config/env';
 
-// The client gets the API key from the environment variable `GEMINI_API_KEY` automatically
-// If not found, it will try `API_KEY` as fallback (for Vite build-time injection)
-const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+const ai = apiKey
+  ? new GoogleGenAI({ apiKey })
+  : new GoogleGenAI({});
 
-// Initialize GoogleGenAI - it will automatically read GEMINI_API_KEY from environment
-// But we also support build-time injection via Vite's define
-const ai = apiKey 
-  ? new GoogleGenAI({ apiKey }) 
-  : new GoogleGenAI({}); // Empty object - will try to read from process.env.GEMINI_API_KEY automatically
-
-if (!apiKey && !process.env.GEMINI_API_KEY) {
+if (!apiKey) {
   console.warn("GEMINI_API_KEY not found in environment variables. Please create a .env file in the root directory with GEMINI_API_KEY=your_key");
 }
 
