@@ -1,3 +1,15 @@
+@import "tailwindcss";
+
+@theme {
+  --color-riso-paper: #fcfbf8;
+  --color-riso-green: #00a651;
+  --color-riso-pink: #ff48b0;
+  --color-riso-blue: #0078bf;
+  --color-riso-yellow: #ffe800;
+  --color-riso-black: #1a1a1a;
+  --font-family-mono: 'Courier Prime', 'Courier New', monospace;
+}
+
 .lab-panel {
   position: relative;
 }
