@@ -611,10 +611,17 @@ const AppContent: React.FC = () => {
           </button>
         </div>
 
-        {market.showMarketplace ? (
-          <Marketplace onSelectListing={market.handleSelectListing} walletAddress={wallet.walletAddress} refreshKey={market.marketRefreshKey} />
-        ) : spec.showGallery ? (
-          <div className="w-full h-full px-8 pb-8 pt-24 overflow-y-auto bg-grain custom-scrollbar">
+        {/* Canvas — 始终挂载，保留动画状态 */}
+        <div className="w-full h-full relative p-12 flex items-end justify-center">
+          <div className="w-full h-full border-4 border-black relative bg-white/50 backdrop-blur-sm shadow-[10px_10px_0px_0px_rgba(0,0,0,0.1)]">
+            <PlantCanvas analyzer={audio.analyzer} dna={dna} labState={labState} onBioUpdate={handleBioUpdate} triggerSnapshot={spec.triggerSnapshot} onSnapshot={handleSnapshotCaptured} />
+            {audio.isListening && labState === "GROWING" && <div className="absolute inset-0 pointer-events-none opacity-10 bg-[linear-gradient(transparent:50%,rgba(0,166,81,0.25):50%)] bg-[length:100%_4px]" />}
+          </div>
+        </div>
+
+        {/* Gallery — 绝对定位叠加层，不卸载 Canvas */}
+        {spec.showGallery && (
+          <div className="absolute inset-0 z-10 bg-riso-paper w-full h-full px-8 pb-8 pt-24 overflow-y-auto bg-grain custom-scrollbar">
             <div className="flex flex-wrap justify-between items-end gap-4 mb-8 border-b-2 border-riso-green pb-2">
               <div><h2 className="text-3xl font-bold text-riso-black uppercase">{t("herbarium_title")}</h2><p className="text-xs font-mono text-gray-500 uppercase">{t("gallery_hint")}</p></div>
               {spec.collection.length > 0 && <button onClick={spec.clearCollection} className="text-red-500 text-xs font-bold hover:underline bg-white px-2 py-1 border border-transparent hover:border-red-500 transition-colors uppercase"><Trash2 className="w-4 h-4 inline" /> {t("burn_all")}</button>}
@@ -635,12 +642,12 @@ const AppContent: React.FC = () => {
               </div>
             )}
           </div>
-        ) : (
-          <div className="w-full h-full relative p-12 flex items-end justify-center">
-            <div className="w-full h-full border-4 border-black relative bg-white/50 backdrop-blur-sm shadow-[10px_10px_0px_0px_rgba(0,0,0,0.1)]">
-              <PlantCanvas analyzer={audio.analyzer} dna={dna} labState={labState} onBioUpdate={handleBioUpdate} triggerSnapshot={spec.triggerSnapshot} onSnapshot={handleSnapshotCaptured} />
-              {audio.isListening && labState === "GROWING" && <div className="absolute inset-0 pointer-events-none opacity-10 bg-[linear-gradient(transparent:50%,rgba(0,166,81,0.25):50%)] bg-[length:100%_4px]" />}
-            </div>
+        )}
+
+        {/* Marketplace — 绝对定位叠加层，不卸载 Canvas */}
+        {market.showMarketplace && (
+          <div className="absolute inset-0 z-10 bg-riso-paper">
+            <Marketplace onSelectListing={market.handleSelectListing} walletAddress={wallet.walletAddress} refreshKey={market.marketRefreshKey} />
           </div>
         )}
       </div>
