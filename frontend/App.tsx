@@ -621,7 +621,7 @@ const AppContent: React.FC = () => {
 
         {/* Gallery — 绝对定位叠加层，不卸载 Canvas */}
         {spec.showGallery && (
-          <div className="absolute inset-0 z-10 bg-riso-paper w-full h-full px-8 pb-8 pt-24 overflow-y-auto bg-grain custom-scrollbar">
+          <div className="absolute inset-0 z-10 bg-riso-paper w-full h-full px-8 pb-8 pt-24 overflow-y-auto custom-scrollbar">
             <div className="flex flex-wrap justify-between items-end gap-4 mb-8 border-b-2 border-riso-green pb-2">
               <div><h2 className="text-3xl font-bold text-riso-black uppercase">{t("herbarium_title")}</h2><p className="text-xs font-mono text-gray-500 uppercase">{t("gallery_hint")}</p></div>
               {spec.collection.length > 0 && <button onClick={spec.clearCollection} className="text-red-500 text-xs font-bold hover:underline bg-white px-2 py-1 border border-transparent hover:border-red-500 transition-colors uppercase"><Trash2 className="w-4 h-4 inline" /> {t("burn_all")}</button>}
