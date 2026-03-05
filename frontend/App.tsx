@@ -580,6 +580,23 @@ const AppContent: React.FC = () => {
                   </button>
                   <div className="text-[9px] text-gray-500 text-center leading-tight uppercase">{t("voice_hint")}</div>
                 </div>
+              ) : audio.inputMode === "file" ? (
+                <div className="space-y-2">
+                  {audio.isListening ? (
+                    <>
+                      <button onClick={audio.toggleFilePlayback} className={`w-full py-3 px-4 font-bold border-2 border-riso-black transition-all flex items-center justify-center gap-2 uppercase ${audio.isPlayingFile ? "bg-riso-blue text-white shadow-none translate-y-1" : "bg-riso-yellow hover:bg-yellow-300"}`}>
+                        {audio.isPlayingFile ? <><Pause className="w-5 h-5" /> {t("file_pause")}</> : <><Play className="w-5 h-5" /> {t("file_resume")}</>}
+                      </button>
+                      <button onClick={() => audio.fileInputRef.current?.click()} className="w-full py-1.5 text-[10px] font-bold border border-riso-black/50 bg-white hover:bg-gray-100 uppercase">
+                        {t("replace_mp3")}
+                      </button>
+                    </>
+                  ) : (
+                    <button onClick={() => audio.fileInputRef.current?.click()} className="w-full py-3 px-4 font-bold border-2 border-riso-black bg-riso-yellow hover:bg-yellow-300 transition-all flex items-center justify-center gap-2 uppercase">
+                      <Upload className="w-5 h-5" /> {t("load_mp3")}
+                    </button>
+                  )}
+                </div>
               ) : (
                 <button onClick={() => audio.handleAudioInputToggle("mic")} className={`w-full py-3 px-4 font-bold border-2 border-riso-black transition-all duration-150 flex items-center justify-center gap-2 uppercase ${audio.inputMode === "mic" && audio.isListening ? "bg-riso-pink text-white shadow-none translate-y-1" : "bg-riso-yellow hover:bg-yellow-300"}`}>
                   {audio.inputMode === "mic" && audio.isListening ? <><Disc className="animate-spin" /> {t("halt_stream")}</> : <><Mic /> {t("open_mic")}</>}

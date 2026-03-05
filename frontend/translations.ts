@@ -52,6 +52,8 @@ export const translations = {
     halt_stream: "停止输入",
     load_mp3: "加载 MP3",
     replace_mp3: "更换 MP3",
+    file_pause: "暂停播放",
+    file_resume: "继续播放",
     
     // Demo Presets
     demo_desc: "选择预设音效模式，观察植物对不同频率的反应",
@@ -166,6 +168,10 @@ export const translations = {
     detail_delete_btn: "销毁档案",
     detail_delete_confirm: "确定要销毁这枚珍贵的标本吗？此操作不可撤销。",
     status_minted: "已铸造",
+    detail_save_image: "保存照片",
+    detail_export_card: "导出标本卡",
+    detail_exporting: "生成中...",
+    status_archive: "仅本地存档",
 
     // Marketplace
     market_explore: "探索植物标本",
@@ -289,6 +295,8 @@ export const translations = {
     halt_stream: "HALT STREAM",
     load_mp3: "LOAD MP3",
     replace_mp3: "REPLACE MP3",
+    file_pause: "PAUSE",
+    file_resume: "RESUME",
     
     // Demo Presets
     demo_desc: "Select a preset to observe frequency responses",
@@ -403,6 +411,10 @@ export const translations = {
     detail_delete_btn: "DELETE ARCHIVE",
     detail_delete_confirm: "Are you sure you want to burn this precious specimen? This cannot be undone.",
     status_minted: "MINTED",
+    detail_save_image: "SAVE IMAGE",
+    detail_export_card: "EXPORT CARD",
+    detail_exporting: "GENERATING...",
+    status_archive: "LOCAL ARCHIVE",
 
     // Marketplace
     market_explore: "Explore Specimens",
