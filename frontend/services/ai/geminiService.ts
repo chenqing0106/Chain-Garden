@@ -5,6 +5,8 @@ import { buildTextAnalysisPrompt, buildImageAnalysisPrompt } from "./prompts";
 import { GEMINI_API_KEY as apiKey } from '../../config/env';
 import { parseAndValidateDNA } from './parseAndValidateDNA';
 
+const GEMINI_MODEL = "gemini-2.0-flash";
+
 const ai = apiKey
   ? new GoogleGenAI({ apiKey })
   : new GoogleGenAI({});
@@ -32,7 +34,7 @@ class GeminiService implements AIService {
       throw new Error("API key not configured. Please set GEMINI_API_KEY in your .env file in the root directory. See ENV_SETUP.md for details.");
     }
 
-    const model = "gemini-2.5-flash";
+    const model = GEMINI_MODEL;
     const prompt = buildTextAnalysisPrompt(vibe);
     
     try {
@@ -95,7 +97,7 @@ class GeminiService implements AIService {
 
     const promptText = buildImageAnalysisPrompt(additionalPrompt);
 
-    const model = "gemini-2.0-flash-exp";
+    const model = GEMINI_MODEL;
     
     try {
       const response = await ai.models.generateContent({

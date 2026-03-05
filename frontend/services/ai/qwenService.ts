@@ -109,7 +109,8 @@ class QwenService implements AIService {
                 }
               ]
             }
-          ]
+          ],
+          response_format: { type: 'json_object' }
         })
       });
 

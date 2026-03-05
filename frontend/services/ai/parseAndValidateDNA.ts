@@ -27,8 +27,11 @@ export function parseAndValidateDNA(content: string): PlantDNA {
     }
   }
 
-  if (!Array.isArray(plantDNA.colorPalette) || plantDNA.colorPalette.length !== 3) {
-    throw new Error("colorPalette must be an array of exactly 3 hex color codes");
+  if (!Array.isArray(plantDNA.colorPalette) || plantDNA.colorPalette.length < 3) {
+    throw new Error("colorPalette must be an array of at least 3 hex color codes");
+  }
+  if (plantDNA.colorPalette.length > 3) {
+    plantDNA.colorPalette = plantDNA.colorPalette.slice(0, 3);
   }
 
   return plantDNA;

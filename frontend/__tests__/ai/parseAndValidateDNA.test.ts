@@ -80,20 +80,21 @@ describe('parseAndValidateDNA — colorPalette 校验', () => {
   it('colorPalette 少于 3 个颜色时抛出错误', () => {
     const dna = { ...VALID_DNA, colorPalette: ["#1a1a2e", "#16213e"] };
     expect(() => parseAndValidateDNA(JSON.stringify(dna)))
-      .toThrow("colorPalette must be an array of exactly 3 hex color codes");
+      .toThrow("colorPalette must be an array of at least 3 hex color codes");
   });
 
-  it('colorPalette 多于 3 个颜色时抛出错误', () => {
-    // [BUG-002] AI 偶尔返回 4 个颜色，此处验证该场景会被拒绝
+  it('[BUG-002] colorPalette 多于 3 个颜色时自动截取前 3 个，不抛出错误', () => {
+    // BUG-002 修复：AI 偶尔返回 4 个颜色时，宽松处理截取前 3 个而非拒绝
     const dna = { ...VALID_DNA, colorPalette: ["#1a1a2e", "#16213e", "#0f3460", "#extra"] };
-    expect(() => parseAndValidateDNA(JSON.stringify(dna)))
-      .toThrow("colorPalette must be an array of exactly 3 hex color codes");
+    const result = parseAndValidateDNA(JSON.stringify(dna));
+    expect(result.colorPalette).toHaveLength(3);
+    expect(result.colorPalette).toEqual(["#1a1a2e", "#16213e", "#0f3460"]);
   });
 
   it('colorPalette 不是数组时抛出错误', () => {
     const dna = { ...VALID_DNA, colorPalette: "#1a1a2e" as any };
     expect(() => parseAndValidateDNA(JSON.stringify(dna)))
-      .toThrow("colorPalette must be an array of exactly 3 hex color codes");
+      .toThrow("colorPalette must be an array of at least 3 hex color codes");
   });
 });
 
